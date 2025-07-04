@@ -10,6 +10,9 @@ from agentLoop.visualizer import ExecutionVisualizer
 from rich.live import Live
 from rich.console import Console
 from datetime import datetime
+from config.log_config import get_logger, logger_step, logger_json_block, logger_prompt, logger_code_block
+
+logger = get_logger(__name__)    
 
 class AgentLoop4:
     def __init__(self, multi_mcp, strategy="conservative"):
@@ -21,6 +24,7 @@ class AgentLoop4:
         # Phase 1: File Profiling (if files exist)
         file_profiles = {}
         if uploaded_files:
+            logger_step(logger, "Phase 1: File Profiling - Running DistillerAgent")
             file_result = await self.agent_runner.run_agent(
                 "DistillerAgent",
                 {
@@ -32,8 +36,11 @@ class AgentLoop4:
             )
             if file_result["success"]:
                 file_profiles = file_result["output"]
+        else:
+            logger_step(logger, "Phase 1: File Profiling - No files uploaded, skipping DistillerAgent")
 
         # Phase 2: Planning with AgentRunner
+        logger_step(logger, "Phase 2: Planning - Running PlannerAgent")
         plan_result = await self.agent_runner.run_agent(
             "PlannerAgent",
             {
@@ -54,8 +61,11 @@ class AgentLoop4:
         
         plan_graph = plan_result["output"]["plan_graph"]
 
+        logger_json_block(logger, "Plan Graph", plan_graph)
+
         try:
             # Phase 3: 100% NetworkX Graph-First Execution
+            logger_step(logger, "Phase 3: 100% NetworkX Graph-First Execution - Calling ExecutionContextManager")
             context = ExecutionContextManager(
                 plan_graph,
                 session_id=None,
@@ -68,9 +78,13 @@ class AgentLoop4:
             
             # Initialize graph with file profiles and globals
             context.set_file_profiles(file_profiles)
+            logger_json_block(logger, "Globals Schema", globals_schema)
             context.plan_graph.graph['globals_schema'].update(globals_schema)
 
+            logger_step(logger, "🔄 Calling execution context manager to execute the plan graph")
+
             # Phase 4: Execute DAG with visualization
+            logger_step(logger, "Phase 4: Execute DAG with visualization")
             await self._execute_dag(context)
 
             # Phase 5: Return the CONTEXT OBJECT, not summary
@@ -96,6 +110,9 @@ class AgentLoop4:
                 for source, target in context.plan_graph.edges()
             ]
         }
+
+        #logger.info("🔄 Calling execution context manager to execute the plan graph")
+        #logger_json_block(logger, "Plan Graph", plan_graph)
         
         # Create visualizer
         visualizer = ExecutionVisualizer(plan_graph)
@@ -105,7 +122,15 @@ class AgentLoop4:
         max_iterations = 20
         iteration = 0
 
+        logger_step(logger, f"Starting execution of plan graph with {len(context.plan_graph.nodes())} nodes and {len(context.plan_graph.edges())} edges")
+        logger_json_block(logger, "Plan Graph", plan_graph)
+        logger_json_block(logger, "Context", context)
+        logger_step(logger, f"Max iterations: {max_iterations}")
+
         while not context.all_done() and iteration < max_iterations:
+
+            #logger.info(f"🔄 Iteration: {iteration} for max iterations: {max_iterations}")
+            logger_step(logger, f"🔄 Iteration: {iteration} for max iterations: {max_iterations}")
             iteration += 1
             
             # Show current state
@@ -131,6 +156,8 @@ class AgentLoop4:
                 context.mark_running(step_id)
             
             # ✅ EXECUTE AGENTS FOR REAL
+            #logger.info(f"🔄 Executing agents for real")
+            logger_step(logger, f"🔄 Executing agents for real")
             tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -154,11 +181,13 @@ class AgentLoop4:
 
     async def _execute_step(self, step_id, context):
         """Execute a single step with call_self support"""
+        logger_step(logger, f"🔄 Executing step: {step_id}")
         step_data = context.get_step_data(step_id)
         agent_type = step_data["agent"]
         
         # Get inputs from NetworkX graph
         inputs = context.get_inputs(step_data.get("reads", []))
+        #logger_json_block(logger, "Inputs", inputs)
         
         # 🔧 HELPER FUNCTION: Build agent input (consistent for both iterations)
         def build_agent_input(instruction=None, previous_output=None, iteration_context=None):
@@ -193,15 +222,20 @@ class AgentLoop4:
 
         # Execute first iteration
         agent_input = build_agent_input()
+        logger.info(f"🔄 Running agent {agent_type} with input: {agent_input}")
+        logger_json_block(logger, "Agent Input", agent_input)
         result = await self.agent_runner.run_agent(agent_type, agent_input)
-        
+        logger_json_block(logger, "Agent Result", result)
         if result["success"]:
             output = result["output"]
             
             # Check for call_self
             if output.get("call_self"):
+                logger_step(logger, f"🔄 Call self detected for step: {step_id}")
                 # Handle code execution if needed
                 if context._has_executable_code(output):
+                    logger_step(logger, f"🔄 Executing code for step: {step_id}")
+                    logger_code_block(logger, f"Code for step: {step_id}", output.get("code", ""), output.get("code_output", ""))
                     execution_result = await context._auto_execute_code(step_id, output)
                     if execution_result.get("status") == "success":
                         execution_data = execution_result.get("result", {})

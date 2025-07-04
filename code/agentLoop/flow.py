@@ -124,7 +124,6 @@ class AgentLoop4:
 
         logger_step(logger, f"Starting execution of plan graph with {len(context.plan_graph.nodes())} nodes and {len(context.plan_graph.edges())} edges")
         logger_json_block(logger, "Plan Graph", plan_graph)
-        logger_json_block(logger, "Context", context)
         logger_step(logger, f"Max iterations: {max_iterations}")
 
         while not context.all_done() and iteration < max_iterations:
@@ -157,7 +156,7 @@ class AgentLoop4:
             
             # ✅ EXECUTE AGENTS FOR REAL
             #logger.info(f"🔄 Executing agents for real")
-            logger_step(logger, f"🔄 Executing agents for real")
+            logger_step(logger, f"🔄 Executing agents for real for steps: {ready_steps}")
             tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 

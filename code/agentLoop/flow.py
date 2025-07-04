@@ -10,9 +10,6 @@ from agentLoop.visualizer import ExecutionVisualizer
 from rich.live import Live
 from rich.console import Console
 from datetime import datetime
-from config.log_config import setup_logging, logger_json_block, logger_prompt, logger_code_block
-
-logger = setup_logging(__name__)    
 
 class AgentLoop4:
     def __init__(self, multi_mcp, strategy="conservative"):
@@ -57,8 +54,6 @@ class AgentLoop4:
         
         plan_graph = plan_result["output"]["plan_graph"]
 
-        logger_json_block(logger, "Plan Graph", plan_graph)
-
         try:
             # Phase 3: 100% NetworkX Graph-First Execution
             context = ExecutionContextManager(
@@ -74,8 +69,6 @@ class AgentLoop4:
             # Initialize graph with file profiles and globals
             context.set_file_profiles(file_profiles)
             context.plan_graph.graph['globals_schema'].update(globals_schema)
-
-            logger.info("🔄 Calling execution context manager to execute the plan graph")
 
             # Phase 4: Execute DAG with visualization
             await self._execute_dag(context)
@@ -103,9 +96,6 @@ class AgentLoop4:
                 for source, target in context.plan_graph.edges()
             ]
         }
-
-        logger.info("🔄 Calling execution context manager to execute the plan graph")
-        logger_json_block(logger, "Plan Graph", plan_graph)
         
         # Create visualizer
         visualizer = ExecutionVisualizer(plan_graph)
@@ -116,8 +106,6 @@ class AgentLoop4:
         iteration = 0
 
         while not context.all_done() and iteration < max_iterations:
-
-            logger.info(f"🔄 Iteration: {iteration} for max iterations: {max_iterations}")
             iteration += 1
             
             # Show current state
@@ -143,7 +131,6 @@ class AgentLoop4:
                 context.mark_running(step_id)
             
             # ✅ EXECUTE AGENTS FOR REAL
-            logger.info(f"🔄 Executing agents for real")
             tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -167,7 +154,6 @@ class AgentLoop4:
 
     async def _execute_step(self, step_id, context):
         """Execute a single step with call_self support"""
-        logger.info(f"🔄 Executing step: {step_id}")
         step_data = context.get_step_data(step_id)
         agent_type = step_data["agent"]
         
@@ -207,10 +193,8 @@ class AgentLoop4:
 
         # Execute first iteration
         agent_input = build_agent_input()
-        logger.info(f"🔄 Running agent {agent_type} with input: {agent_input}")
-        logger_json_block(logger, "Agent Input", agent_input)
         result = await self.agent_runner.run_agent(agent_type, agent_input)
-        logger_json_block(logger, "Agent Result", result)
+        
         if result["success"]:
             output = result["output"]
             

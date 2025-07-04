@@ -7,9 +7,6 @@ from utils.json_parser import parse_llm_json
 from utils.utils import log_step, log_error
 from PIL import Image
 import os
-from config.log_config import setup_logging, logger_json_block, logger_prompt, logger_code_block
-
-logger = setup_logging(__name__)    
 
 class AgentRunner:
     def __init__(self, multi_mcp):
@@ -47,9 +44,6 @@ class AgentRunner:
 
     async def run_agent(self, agent_type: str, input_data: dict, image_path: Optional[str] = None) -> dict:
         """Run a specific agent with input data and optional image"""
-
-        logger.info(f"🔄 Running agent: {agent_type}")
-        logger_json_block(logger, "Input data", input_data)
         
         if agent_type not in self.agent_configs:
             raise ValueError(f"Unknown agent type: {agent_type}")
@@ -87,8 +81,6 @@ class AgentRunner:
             
             # 3. Build full prompt
             full_prompt = f"{prompt_template.strip()}{tools_text}\n\n```json\n{json.dumps(input_data, indent=2)}\n```"
-
-            logger_prompt(logger, f"Full prompt for {agent_type}", full_prompt)
             
             # 4. Create model manager with agent's specified model
             model_manager = ModelManager(config["model"])
@@ -104,8 +96,6 @@ class AgentRunner:
             # 6. Parse JSON response dynamically
             output = parse_llm_json(response)
             # import pdb; pdb.set_trace()
-
-            logger_json_block(logger, f"Agent Output for {agent_type}", output)
             
             # Calculate input text for costing
             input_text = str(input_data)

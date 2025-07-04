@@ -9,10 +9,6 @@ from agentLoop.flow import AgentLoop4
 from agentLoop.output_analyzer import analyze_results
 from pathlib import Path
 from pprint import pprint
-from config.log_config import setup_logging
-
-# Initialize logging
-logger = setup_logging(__name__)
 
 BANNER = """
 ──────────────────────────────────────────────────────
@@ -88,9 +84,6 @@ async def main():
         try:
             # Get file input first
             uploaded_files, file_manifest = get_file_input()
-
-            logger.info(f"Uploaded files: {uploaded_files}")
-            logger.info(f"File manifest: {file_manifest}")
             
             # Get user query
             query = get_user_query()

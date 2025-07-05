@@ -48,7 +48,8 @@ class AgentRunner:
     async def run_agent(self, agent_type: str, input_data: dict, image_path: Optional[str] = None) -> dict:
         """Run a specific agent with input data and optional image"""
 
-        logger_step(logger, f"🔄🔄 Running {agent_type} agent 🔄🔄🔄")
+        step_id = input_data.get("step_id", "unknown")
+        logger_step(logger, f"🔄🔄🔄 Running {agent_type} agent for step {step_id} 🔄🔄🔄")
         
         if agent_type not in self.agent_configs:
             raise ValueError(f"Unknown agent type: {agent_type}")
@@ -87,7 +88,7 @@ class AgentRunner:
             # 3. Build full prompt
             full_prompt = f"{prompt_template.strip()}{tools_text}\n\n```json\n{json.dumps(input_data, indent=2)}\n```"
             
-            logger_prompt(logger, f"Prompt for {agent_type} agent", full_prompt)
+            #logger_prompt(logger, f"Prompt for {agent_type} agent for step {step_id}", full_prompt)
             
             # 4. Create model manager with agent's specified model
             model_manager = ModelManager(config["model"])
@@ -104,7 +105,7 @@ class AgentRunner:
             output = parse_llm_json(response)
             # import pdb; pdb.set_trace()
 
-            logger_json_block(logger, f"Output for {agent_type} agent", output)
+            logger_json_block(logger, f"Output for {agent_type} agent for step {step_id}", output)
             
             # Calculate input text for costing
             input_text = str(input_data)

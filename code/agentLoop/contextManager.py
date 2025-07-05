@@ -6,11 +6,14 @@ import time
 from datetime import datetime
 from pathlib import Path
 import asyncio
-from action.executor import run_user_code
+from action.executor import run_user_code, run_python_code_legacy
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.text import Text
+from config.log_config import get_logger, logger_step, logger_json_block, logger_prompt, logger_code_block
+
+logger = get_logger(__name__)
 
 class ExecutionContextManager:
     def __init__(self, plan_graph: dict, session_id: str = None, original_query: str = None, file_manifest: list = None, debug_mode: bool = False):
@@ -103,17 +106,27 @@ class ExecutionContextManager:
     def _extract_executable_code(self, output):
         """Extract executable code"""
         code_to_execute = {}
+
+        logger.info(f"🔄 Executable code found in output: {output}")
         
         if "code_variants" in output:
             for key, code in output["code_variants"].items():
                 if isinstance(code, str):
                     code_to_execute[key] = code.strip()
-        
+
+        logger.info(f"🔄 Returning code to execute: {code_to_execute}")
+
         return code_to_execute
     
     async def _auto_execute_code(self, step_id, output):
         """Execute code with COMPLETE variable injection"""
+        logger_step(logger, f"🔄 Executing code for step: {step_id}")
+
         code_to_execute = self._extract_executable_code(output)
+
+        #logger_code_block(logger, f"Code to execute:", code_to_execute, "None")
+
+        logger_json_block(logger, f"Code to execute:", code_to_execute)
         
         if not code_to_execute:
             return {"status": "error", "error": "No executable code found"}
@@ -124,8 +137,13 @@ class ExecutionContextManager:
         
         # Get globals_schema for injection
         globals_schema = self.plan_graph.graph['globals_schema']
+
+        logger_json_block(logger, f"Globals schema:", globals_schema)
+        logger_json_block(logger, f"Reads:", reads)
+        logger_json_block(logger, f"Node data:", node_data)
         
         for code_key, code in code_to_execute.items():
+            logger.info(f"🔄 Executing code for step: {step_id} - Code key: {code_key}")
             try:
                 # INJECT ALL AVAILABLE VARIABLES
                 globals_injection = ""
@@ -149,17 +167,39 @@ class ExecutionContextManager:
                 
                 enhanced_code = globals_injection + code
                 
+                # Code shared by Rohan - has bug
+                #result = await run_user_code(
+                #    enhanced_code,
+                #    self.multi_mcp if hasattr(self, 'multi_mcp') else None,
+                #    self.plan_graph.graph['session_id']
+                #)
+
+                logger.info(f"🔄 Calling run_user_code for step: {step_id} - Code key: {code_key}")
+                # Fix 1 - Use the new run_user_code, it uses correct code variants
                 result = await run_user_code(
-                    enhanced_code,
+                    {"code_variants": {code_key: enhanced_code}},
                     self.multi_mcp if hasattr(self, 'multi_mcp') else None,
-                    self.plan_graph.graph['session_id']
+                    self.plan_graph.graph['session_id'],
+                    globals_schema,
+                    None
                 )
+
+                # Fix 2 - Use the old run_python_code_legacy, it uses hard coded code variant CODE_O1A
+                #result = await run_python_code_legacy(
+                #    enhanced_code,
+                #    self.multi_mcp if hasattr(self, 'multi_mcp') else None,
+                #    self.plan_graph.graph['session_id'],
+                #    globals_schema
+                #)
+
+                logger_code_block(logger, f"Code executed - Results:", enhanced_code, result)
                 
                 if result.get("status") == "success":
                     result["executed_variant"] = code_key
                     return result
                 
             except Exception as e:
+                logger.error(f"❌ Error executing code: {e}")
                 continue
         
         return {"status": "error", "error": "All code variants failed"}

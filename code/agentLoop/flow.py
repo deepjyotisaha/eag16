@@ -233,8 +233,7 @@ class AgentLoop4:
                 logger_step(logger, f"🔄 Call self detected for step: {step_id}")
                 # Handle code execution if needed
                 if context._has_executable_code(output):
-                    logger_step(logger, f"🔄 Executing code for step: {step_id}")
-                    logger_code_block(logger, f"Code for step: {step_id}", output.get("code", ""), output.get("code_output", ""))
+                    logger_step(logger, f"🔄 Need to execute code for step: {step_id}")
                     execution_result = await context._auto_execute_code(step_id, output)
                     if execution_result.get("status") == "success":
                         execution_data = execution_result.get("result", {})

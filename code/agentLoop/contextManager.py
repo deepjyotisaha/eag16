@@ -126,7 +126,7 @@ class ExecutionContextManager:
 
         #logger_code_block(logger, f"Code to execute:", code_to_execute, "None")
 
-        logger_json_block(logger, f"Code to execute:", code_to_execute)
+        logger_json_block(logger, f"Code to execute for step {step_id}", code_to_execute)
         
         if not code_to_execute:
             return {"status": "error", "error": "No executable code found"}
@@ -138,9 +138,9 @@ class ExecutionContextManager:
         # Get globals_schema for injection
         globals_schema = self.plan_graph.graph['globals_schema']
 
-        logger_json_block(logger, f"Globals schema:", globals_schema)
-        logger_json_block(logger, f"Reads:", reads)
-        logger_json_block(logger, f"Node data:", node_data)
+        logger_json_block(logger, f"Step: {step_id} - Globals schema:", globals_schema)
+        logger_json_block(logger, f"Step: {step_id} - Reads:", reads)
+        logger_json_block(logger, f"Step: {step_id} - Node data:", node_data)
         
         for code_key, code in code_to_execute.items():
             logger.info(f"🔄 Executing code for step: {step_id} - Code key: {code_key}")
@@ -181,7 +181,8 @@ class ExecutionContextManager:
                     self.multi_mcp if hasattr(self, 'multi_mcp') else None,
                     self.plan_graph.graph['session_id'],
                     globals_schema,
-                    None
+                    None,
+                    step_id
                 )
 
                 # Fix 2 - Use the old run_python_code_legacy, it uses hard coded code variant CODE_O1A
@@ -192,7 +193,7 @@ class ExecutionContextManager:
                 #    globals_schema
                 #)
 
-                logger_code_block(logger, f"Code executed - Results:", enhanced_code, result)
+                logger_code_block(logger, f"Step: {step_id} - Code executed - Results:", enhanced_code, result)
                 
                 if result.get("status") == "success":
                     result["executed_variant"] = code_key

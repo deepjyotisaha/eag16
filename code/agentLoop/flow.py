@@ -180,9 +180,12 @@ class AgentLoop4:
 
     async def _execute_step(self, step_id, context):
         """Execute a single step with call_self support"""
-        logger_step(logger, f"🔄 Executing step: {step_id}")
+
         step_data = context.get_step_data(step_id)
         agent_type = step_data["agent"]
+
+        logger_step(logger, f"🔄 Executing step: {step_id} by calling agent {step_data['agent']}")
+        logger.info(f"🔄 Executing step: {step_id} by calling agent {step_data['agent']}")
         
         # Get inputs from NetworkX graph
         inputs = context.get_inputs(step_data.get("reads", []))
@@ -222,9 +225,9 @@ class AgentLoop4:
         # Execute first iteration
         agent_input = build_agent_input()
         logger.info(f"🔄 Running agent {agent_type} with input: {agent_input}")
-        logger_json_block(logger, "Agent Input", agent_input)
+        logger_json_block(logger, f"Agent Input for step {step_id}", agent_input)
         result = await self.agent_runner.run_agent(agent_type, agent_input)
-        logger_json_block(logger, "Agent Result", result)
+        logger_json_block(logger, f"Agent Result for step {step_id}", result)
         if result["success"]:
             output = result["output"]
             
@@ -245,6 +248,9 @@ class AgentLoop4:
                     previous_output=output,
                     iteration_context=output.get("iteration_context", {})
                 )
+
+                logger.info(f"🔄 Running agent {agent_type} for step {step_id} with input (second iteration): {second_agent_input}")
+                logger_json_block(logger, f"Agent Input for step {step_id} - Second iteration", second_agent_input)
                 
                 second_result = await self.agent_runner.run_agent(agent_type, second_agent_input)
                 

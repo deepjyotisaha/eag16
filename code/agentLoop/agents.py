@@ -50,6 +50,7 @@ class AgentRunner:
 
         step_id = input_data.get("step_id", "unknown")
         logger_step(logger, f"🔄🔄🔄 Running {agent_type} agent for step {step_id} 🔄🔄🔄")
+        logger.info(f"🔄🔄🔄 Running {agent_type} agent for step {step_id} 🔄🔄🔄")
         
         if agent_type not in self.agent_configs:
             raise ValueError(f"Unknown agent type: {agent_type}")

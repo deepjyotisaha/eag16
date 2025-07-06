@@ -360,11 +360,18 @@ class AgentLoop4:
         if context._has_executable_code(output):
             logger_step(logger, f"🔄 Need to execute code for step: {step_id} (iteration {iteration})")
             execution_result = await context._auto_execute_code(step_id, output, iteration)
-            new_result = execution_result.get("result", {})
-            logger_json_block(logger, f"Execution result for step {step_id} - Iteration {iteration}", new_result)
-            if new_result.get("status") == "success":
-                execution_data = new_result.get("result", {})
+            if execution_result.get("status") == "success":
+                # 🔧 FIX: Extract the actual result data correctly
+                code_results = execution_result.get("code_results", {})
+                execution_data = code_results.get("result", {})
+                logger_json_block(logger, f"Raw execution result for step {step_id} - Iteration {iteration}", execution_result)
+                logger_json_block(logger, f"Code results for step {step_id} - Iteration {iteration}", code_results)
                 logger_json_block(logger, f"Execution data for step {step_id} - Iteration {iteration}", execution_data)
+                
+                # The result_data should contain the actual variables returned by the code
+                #execution_data = result_data
+                
+                #logger_json_block(logger, f"Execution data for step {step_id} - Iteration {iteration}", execution_data)
                 
                 # Update inputs with execution results for next iteration
                 inputs = {**inputs, **execution_data}
@@ -372,13 +379,20 @@ class AgentLoop4:
                 # Store updated inputs in step_data for next iteration
                 step_data['current_inputs'] = inputs
                 
-                # Update the context's globals_schema so next iteration can access them
-                for key, value in execution_data.items():
-                    if key in step_data.get("writes", []):
-                        context.plan_graph.graph['globals_schema'][key] = value
+                # Also merge execution results into the output
+                output = {**output, **execution_data}
                 
                 logger_json_block(logger, f"Updated inputs for step {step_id} - Iteration {iteration}", inputs)
+                logger_json_block(logger, f"Updated globals_schema", context.plan_graph.graph['globals_schema'])
         
+                # 🔧 CRITICAL: Update globals_schema with agent output (regardless of code execution)
+        # This ensures ALL agent outputs are stored in globals_schema
+        if output and isinstance(output, dict):
+            for key, value in output.items():
+                if key not in ['call_self', 'code_variants', 'cost', 'input_tokens', 'output_tokens', 'execution_result', 'execution_status', 'execution_error', 'execution_time', 'executed_variant']:
+                    context.plan_graph.graph['globals_schema'][key] = value
+                    logger_step(logger, f"✅ Agent output: Stored {key} = {value} in globals_schema")
+
         # Check for call_self
         if output.get("call_self") and iteration < max_iterations:
             logger_step(logger, f"🔄 Call self detected for step: {step_id} (iteration {iteration})")
@@ -408,6 +422,16 @@ class AgentLoop4:
             # Store final metadata exactly like original
             step_data['call_self_used'] = len(step_data['iterations']) > 1
             step_data['final_iteration_output'] = output
+            
+            # 🔧 CRITICAL: Ensure globals_schema is updated with final results
+            if output and isinstance(output, dict):
+                for key, value in output.items():
+                    if key not in ['call_self', 'code_variants', 'cost', 'input_tokens', 'output_tokens']:
+                        context.plan_graph.graph['globals_schema'][key] = value
+                        logger_step(logger, f"✅ Final: Stored {key} = {value} in globals_schema")
+            
+            # 🔧 CRITICAL: Save session to persist globals_schema
+            context._auto_save()
             
             logger_step(logger, f"✅ Step {step_id} completed after {len(step_data['iterations'])} iteration(s)")
             return result

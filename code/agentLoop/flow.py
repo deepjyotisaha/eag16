@@ -157,7 +157,8 @@ class AgentLoop4:
             # ✅ EXECUTE AGENTS FOR REAL
             #logger.info(f"🔄 Executing agents for real")
             logger_step(logger, f"🔄 Executing agents for real for steps: {ready_steps}")
-            tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
+            #tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
+            tasks = [self._execute_step_self(step_id, context) for step_id in ready_steps]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # Process results
@@ -240,7 +241,9 @@ class AgentLoop4:
                     execution_result = await context._auto_execute_code(step_id, output)
                     if execution_result.get("status") == "success":
                         execution_data = execution_result.get("result", {})
+                        logger_json_block(logger, f"Execution data for step {step_id}", execution_data)
                         inputs = {**inputs, **execution_data}  # Update inputs for iteration 2
+                        logger_json_block(logger, f"Merged Inputs for step {step_id}", inputs)
                 
                 # Execute second iteration with consistent input structure
                 second_agent_input = build_agent_input(
@@ -277,6 +280,140 @@ class AgentLoop4:
                 return result
         else:
             return result
+
+
+    async def _execute_step_self(self, step_id, context, iteration=0, max_iterations=2):
+        """Execute a single step with call_self support"""
+
+        step_data = context.get_step_data(step_id)
+        agent_type = step_data["agent"]
+
+        logger_step(logger, f"🔄 Executing step: {step_id} by calling agent {step_data['agent']} (iteration {iteration})")
+        logger.info(f"🔄 Executing step: {step_id} by calling agent {step_data['agent']} (iteration {iteration})")
+        
+        # Get inputs from NetworkX graph - ONLY for first iteration
+        if iteration == 0:
+            inputs = context.get_inputs(step_data.get("reads", []))
+        else:
+            # For subsequent iterations, use the inputs that were updated in previous iterations
+            # The inputs should already be available from the previous iteration's execution
+            inputs = step_data.get('current_inputs', {})
+        
+        # 🔧 HELPER FUNCTION: Build agent input (consistent for all iterations)
+        def build_agent_input(instruction=None, previous_output=None, iteration_context=None):
+            if agent_type == "FormatterAgent":
+                all_globals = context.plan_graph.graph['globals_schema'].copy()
+                return {
+                    "step_id": step_id,
+                    "agent_prompt": instruction or step_data.get("agent_prompt", step_data["description"]),
+                    "reads": step_data.get("reads", []),
+                    "writes": step_data.get("writes", []),
+                    "inputs": inputs,
+                    "all_globals_schema": all_globals,  # ✅ ALWAYS included for FormatterAgent
+                    "original_query": context.plan_graph.graph['original_query'],
+                    "session_context": {
+                        "session_id": context.plan_graph.graph['session_id'],
+                        "created_at": context.plan_graph.graph['created_at'],
+                        "file_manifest": context.plan_graph.graph['file_manifest']
+                    },
+                    **({"previous_output": previous_output} if previous_output else {}),
+                    **({"iteration_context": iteration_context} if iteration_context else {})
+                }
+            else:
+                return {
+                    "step_id": step_id,
+                    "agent_prompt": instruction or step_data.get("agent_prompt", step_data["description"]),
+                    "reads": step_data.get("reads", []),
+                    "writes": step_data.get("writes", []),
+                    "inputs": inputs,
+                    **({"previous_output": previous_output} if previous_output else {}),
+                    **({"iteration_context": iteration_context} if iteration_context else {})
+                }
+
+        # Build agent input based on iteration
+        if iteration == 0:
+            # First iteration
+            agent_input = build_agent_input()
+        else:
+            # Subsequent iterations - use previous output
+            previous_output = step_data['iterations'][-1]['output']
+            agent_input = build_agent_input(
+                instruction=previous_output.get("next_instruction", "Continue the task"),
+                previous_output=previous_output,
+                iteration_context=previous_output.get("iteration_context", {})
+            )
+
+        logger.info(f"🔄 Running agent {agent_type} with input (iteration {iteration}): {agent_input}")
+        logger_json_block(logger, f"Agent Input for step {step_id} - Iteration {iteration}", agent_input)
+        
+        # Execute agent
+        result = await self.agent_runner.run_agent(agent_type, agent_input)
+        logger_json_block(logger, f"Agent Result for step {step_id} - Iteration {iteration}", result)
+        
+        if not result["success"]:
+            logger_step(logger, f"❌ Agent failed for step {step_id} at iteration {iteration}")
+            return result
+
+        output = result["output"]
+        
+        # Handle code execution if needed
+        if context._has_executable_code(output):
+            logger_step(logger, f"🔄 Need to execute code for step: {step_id} (iteration {iteration})")
+            execution_result = await context._auto_execute_code(step_id, output, iteration)
+            new_result = execution_result.get("result", {})
+            logger_json_block(logger, f"Execution result for step {step_id} - Iteration {iteration}", new_result)
+            if new_result.get("status") == "success":
+                execution_data = new_result.get("result", {})
+                logger_json_block(logger, f"Execution data for step {step_id} - Iteration {iteration}", execution_data)
+                
+                # Update inputs with execution results for next iteration
+                inputs = {**inputs, **execution_data}
+                
+                # Store updated inputs in step_data for next iteration
+                step_data['current_inputs'] = inputs
+                
+                # Update the context's globals_schema so next iteration can access them
+                for key, value in execution_data.items():
+                    if key in step_data.get("writes", []):
+                        context.plan_graph.graph['globals_schema'][key] = value
+                
+                logger_json_block(logger, f"Updated inputs for step {step_id} - Iteration {iteration}", inputs)
+        
+        # Check for call_self
+        if output.get("call_self") and iteration < max_iterations:
+            logger_step(logger, f"🔄 Call self detected for step: {step_id} (iteration {iteration})")
+            
+            # Store current iteration before recursive call
+            if iteration == 0:
+                step_data['iterations'] = [{"iteration": iteration, "output": output}]
+            else:
+                step_data['iterations'].append({"iteration": iteration, "output": output})
+            
+            # Recursive call for next iteration
+            logger_step(logger, f"🔄 Recursively calling next iteration for step {step_id}")
+            return await self._execute_step_self(step_id, context, iteration + 1, max_iterations)
+        
+        else:
+            # No more call_self or max iterations reached - we're done
+            if output.get("call_self") and iteration >= max_iterations:
+                logger_step(logger, f"⚠️ Max iterations ({max_iterations}) reached for step {step_id}")
+                step_data['max_iterations_reached'] = True
+            
+            # Store final iteration
+            if iteration == 0:
+                step_data['iterations'] = [{"iteration": iteration, "output": output}]
+            else:
+                step_data['iterations'].append({"iteration": iteration, "output": output})
+            
+            # Store final metadata exactly like original
+            step_data['call_self_used'] = len(step_data['iterations']) > 1
+            step_data['final_iteration_output'] = output
+            
+            logger_step(logger, f"✅ Step {step_id} completed after {len(step_data['iterations'])} iteration(s)")
+            return result
+
+
+
 
     async def _handle_failures(self, context):
         """Handle failures via mid-session replanning"""

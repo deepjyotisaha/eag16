@@ -236,7 +236,7 @@ async def execute_code_variants(code_variants: dict, multi_mcp, session_id: str,
         "all_errors": all_errors
     }
 
-async def run_user_code(output_data: dict, multi_mcp, session_id: str = "default_session", globals_schema: dict = None, inputs: dict = None, step_id: str = None) -> dict:
+async def run_user_code(output_data: dict, multi_mcp, session_id: str = "default_session", globals_schema: dict = None, inputs: dict = None, step_id: str = None, iteration: int = 0) -> dict:
     """
     Main execution function: handles direct files, Python code, or both
     
@@ -263,9 +263,9 @@ async def run_user_code(output_data: dict, multi_mcp, session_id: str = "default
         "error": None
     }
     
-    log_step(f"🚀 Executor starting for step {step_id} - session {session_id}", symbol="⚡")
+    log_step(f"🚀 Executor starting for step {step_id}, iteration {iteration} - session {session_id}", symbol="⚡")
     #log_step(f"🚀 Executor starting for output_data: {output_data}", symbol="⚡")
-    logger.info(f"🚀 Executor starting for step {step_id} - session {session_id} - code:: {output_data}")
+    logger.info(f"🚀 Executor starting for step {step_id} - iteration {iteration} - session {session_id} - code:: {output_data}")
     
     try:
         # Phase 1: Process Direct Files (if present)
@@ -283,31 +283,31 @@ async def run_user_code(output_data: dict, multi_mcp, session_id: str = "default
         
         # Phase 2: Execute Python Code (if present)
         if "code_variants" in output_data and output_data["code_variants"]:
-            log_step(f"🐍 Phase 2: Python code execution for step {step_id}", symbol="⚙️")
-            logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - session {session_id} - code:: {output_data}")
+            log_step(f"🐍 Phase 2: Python code execution for step {step_id}, iteration {iteration}", symbol="⚙️")
+            logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - iteration {iteration} - session {session_id} - code:: {output_data}")
             
             code_results = await execute_code_variants(
                 output_data["code_variants"], multi_mcp, session_id, globals_schema, inputs
             )
-            logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - session {session_id} - code results:: {code_results}")
+            logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - iteration {iteration} - session {session_id} - code results:: {code_results}")
             results["code_results"] = code_results
             results["operations"].append("python_code")
             
             if code_results.get("created_files"):
                 results["created_files"].extend(code_results["created_files"])
-                logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - session {session_id} - created files:: {code_results['created_files']}")
+                logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - iteration {iteration} - session {session_id} - created files:: {code_results['created_files']}")
             
             if code_results["status"] != "success":
                 if results["status"] == "success":
                     results["status"] = "partial_failure"
                 results["error"] = f"Code execution failed: {code_results['error']}"
-                logger.warning(f"🐍 Code execution failed for step {step_id} - session {session_id} - error: {code_results['error']}")
+                logger.warning(f"🐍 Code execution failed for step {step_id} - iteration {iteration} - session {session_id} - error: {code_results['error']}")
         
         # Phase 3: Validate
         if not results["operations"]:
             results["status"] = "no_operation"
             results["error"] = "No files or code_variants found in output"
-            logger.warning(f"🏁 Nothing to execute for step {step_id} - session {session_id}")
+            logger.warning(f"🏁 Nothing to execute for step {step_id} - iteration {iteration} - session {session_id}")
             log_step("⚠️ Nothing to execute", symbol="🤔")
         
         results["total_time"] = time.perf_counter() - start_time
@@ -319,8 +319,8 @@ async def run_user_code(output_data: dict, multi_mcp, session_id: str = "default
         if results.get("code_results", {}).get("successful_variant"):
             variant_info = f" ({results['code_results']['successful_variant']} succeeded)"
         
-        log_step(f"🏁 Step {step_id} - Completed: {ops} | {file_count} files{variant_info} | {results['total_time']:.2f}s", symbol="🎯")
-        logger.info(f"🏁 Step {step_id} - Completed: {ops} | {file_count} files{variant_info} | {results['total_time']:.2f}s")
+        log_step(f"🏁 Step {step_id} - iteration {iteration} - Completed: {ops} | {file_count} files{variant_info} | {results['total_time']:.2f}s", symbol="🎯")
+        logger.info(f"🏁 Step {step_id} - iteration {iteration} - Completed: {ops} | {file_count} files{variant_info} | {results['total_time']:.2f}s")
         
         return results
         

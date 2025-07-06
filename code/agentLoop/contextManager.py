@@ -118,15 +118,15 @@ class ExecutionContextManager:
 
         return code_to_execute
     
-    async def _auto_execute_code(self, step_id, output):
+    async def _auto_execute_code(self, step_id, output, self_iteration=0):
         """Execute code with COMPLETE variable injection"""
-        logger_step(logger, f"🔄 Executing code for step: {step_id}")
+        logger_step(logger, f"🔄 Executing code for step: {step_id} - Self iteration: {self_iteration}")
 
         code_to_execute = self._extract_executable_code(output)
 
         #logger_code_block(logger, f"Code to execute:", code_to_execute, "None")
 
-        logger_json_block(logger, f"Code to execute for step {step_id}", code_to_execute)
+        logger_json_block(logger, f"Code to execute for step {step_id} - Self iteration: {self_iteration}", code_to_execute)
         
         if not code_to_execute:
             return {"status": "error", "error": "No executable code found"}
@@ -182,7 +182,8 @@ class ExecutionContextManager:
                     self.plan_graph.graph['session_id'],
                     globals_schema,
                     None,
-                    step_id
+                    step_id,
+                    self_iteration
                 )
 
                 # Fix 2 - Use the old run_python_code_legacy, it uses hard coded code variant CODE_O1A

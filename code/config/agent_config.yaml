@@ -5,7 +5,7 @@ agents:
     mcp_servers: []  # No tools needed
     
   RetrieverAgent:
-    prompt_file: "prompts/retriever_prompt_new.txt" 
+    prompt_file: "prompts/retriever_prompt.txt" 
     model: "gemini"
     mcp_servers: ["documents", "websearch"]  # ✅ Fixed: Use actual server IDs
     

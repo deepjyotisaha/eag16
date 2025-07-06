@@ -107,14 +107,14 @@ class ExecutionContextManager:
         """Extract executable code"""
         code_to_execute = {}
 
-        logger.info(f"🔄 Executable code found in output: {output}")
+        #logger.info(f"🔄 Executable code found in output: {output}")
         
         if "code_variants" in output:
             for key, code in output["code_variants"].items():
                 if isinstance(code, str):
                     code_to_execute[key] = code.strip()
 
-        logger.info(f"🔄 Returning code to execute: {code_to_execute}")
+        #logger.info(f"🔄 Returning code to execute: {code_to_execute}")
 
         return code_to_execute
     
@@ -126,7 +126,7 @@ class ExecutionContextManager:
 
         #logger_code_block(logger, f"Code to execute:", code_to_execute, "None")
 
-        logger_json_block(logger, f"Code to execute for step {step_id} - Self iteration: {self_iteration}", code_to_execute)
+        #logger_json_block(logger, f"Code to execute for step {step_id} - Self iteration: {self_iteration}", code_to_execute)
         
         if not code_to_execute:
             return {"status": "error", "error": "No executable code found"}
@@ -138,12 +138,12 @@ class ExecutionContextManager:
         # Get globals_schema for injection
         globals_schema = self.plan_graph.graph['globals_schema']
 
-        logger_json_block(logger, f"Step: {step_id} - Globals schema:", globals_schema)
-        logger_json_block(logger, f"Step: {step_id} - Reads:", reads)
-        logger_json_block(logger, f"Step: {step_id} - Node data:", node_data)
+        #logger_json_block(logger, f"Step: {step_id} - Globals schema:", globals_schema)
+        #logger_json_block(logger, f"Step: {step_id} - Reads:", reads)
+        #logger_json_block(logger, f"Step: {step_id} - Node data:", node_data)
         
         for code_key, code in code_to_execute.items():
-            logger.info(f"🔄 Executing code for step: {step_id} - Code key: {code_key}")
+            #logger.info(f"🔄 Executing code for step: {step_id} - Code key: {code_key}")
             try:
                 # INJECT ALL AVAILABLE VARIABLES
                 globals_injection = ""
@@ -174,7 +174,7 @@ class ExecutionContextManager:
                 #    self.plan_graph.graph['session_id']
                 #)
 
-                logger.info(f"🔄 Calling run_user_code for step: {step_id} - Code key: {code_key}")
+                #logger.info(f"🔄 Calling run_user_code for step: {step_id} - Code key: {code_key}")
                 # Fix 1 - Use the new run_user_code, it uses correct code variants
                 result = await run_user_code(
                     {"code_variants": {code_key: enhanced_code}},
@@ -194,7 +194,7 @@ class ExecutionContextManager:
                 #    globals_schema
                 #)
 
-                logger_code_block(logger, f"Step: {step_id} - Code executed - Results:", enhanced_code, result)
+                #logger_code_block(logger, f"Step: {step_id} - Code executed - Results:", enhanced_code, result)
                 
                 if result.get("status") == "success":
                     result["executed_variant"] = code_key

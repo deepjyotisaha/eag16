@@ -265,7 +265,7 @@ async def run_user_code(output_data: dict, multi_mcp, session_id: str = "default
     
     log_step(f"🚀 Executor starting for step {step_id}, iteration {iteration} - session {session_id}", symbol="⚡")
     #log_step(f"🚀 Executor starting for output_data: {output_data}", symbol="⚡")
-    logger.info(f"🚀 Executor starting for step {step_id} - iteration {iteration} - session {session_id} - code:: {output_data}")
+    #logger.info(f"🚀 Executor starting for step {step_id} - iteration {iteration} - session {session_id} - code:: {output_data}")
     
     try:
         # Phase 1: Process Direct Files (if present)
@@ -320,7 +320,7 @@ async def run_user_code(output_data: dict, multi_mcp, session_id: str = "default
             variant_info = f" ({results['code_results']['successful_variant']} succeeded)"
         
         log_step(f"🏁 Step {step_id} - iteration {iteration} - Completed: {ops} | {file_count} files{variant_info} | {results['total_time']:.2f}s", symbol="🎯")
-        logger.info(f"🏁 Step {step_id} - iteration {iteration} - Completed: {ops} | {file_count} files{variant_info} | {results['total_time']:.2f}s")
+        #logger.info(f"🏁 Step {step_id} - iteration {iteration} - Completed: {ops} | {file_count} files{variant_info} | {results['total_time']:.2f}s")
         
         return results
         

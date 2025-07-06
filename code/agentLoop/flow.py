@@ -368,8 +368,13 @@ class AgentLoop4:
                 logger_json_block(logger, f"Code results for step {step_id} - Iteration {iteration}", code_results)
                 logger_json_block(logger, f"Execution data for step {step_id} - Iteration {iteration}", execution_data)
                 
-                # The result_data should contain the actual variables returned by the code
-                #execution_data = result_data
+                # Update globals_schema with execution data - variables returned by the code
+                # This ensures ALL code outputs are stored in globals_schema for the next iteration
+                if execution_data and isinstance(execution_data, dict):
+                    for key, value in execution_data.items():
+                        if key not in ['call_self', 'code_variants', 'cost', 'input_tokens', 'output_tokens', 'execution_result', 'execution_status', 'execution_error', 'execution_time', 'executed_variant']:
+                            context.plan_graph.graph['globals_schema'][key] = value
+                
                 
                 #logger_json_block(logger, f"Execution data for step {step_id} - Iteration {iteration}", execution_data)
                 
@@ -383,15 +388,21 @@ class AgentLoop4:
                 output = {**output, **execution_data}
                 
                 logger_json_block(logger, f"Updated inputs for step {step_id} - Iteration {iteration}", inputs)
-                logger_json_block(logger, f"Updated globals_schema", context.plan_graph.graph['globals_schema'])
+        else:
+             # 🔧 CRITICAL:  Update globals_schema with agent output 
+            #There is no code execution, so we need to update the globals_schema with the agent output
+            if output and isinstance(output, dict):
+                for key, value in output.items():
+                    if key not in ['call_self', 'code_variants', 'cost', 'input_tokens', 'output_tokens', 'execution_result', 'execution_status', 'execution_error', 'execution_time', 'executed_variant']:
+                        context.plan_graph.graph['globals_schema'][key] = value
+                        #logger_step(logger, f"✅ Agent output: Stored {key} = {value} in globals_schema")
+
         
-                # 🔧 CRITICAL: Update globals_schema with agent output (regardless of code execution)
+        # 🔧 CRITICAL: Update globals_schema with agent output (regardless of code execution)
         # This ensures ALL agent outputs are stored in globals_schema
-        if output and isinstance(output, dict):
-            for key, value in output.items():
-                if key not in ['call_self', 'code_variants', 'cost', 'input_tokens', 'output_tokens', 'execution_result', 'execution_status', 'execution_error', 'execution_time', 'executed_variant']:
-                    context.plan_graph.graph['globals_schema'][key] = value
-                    logger_step(logger, f"✅ Agent output: Stored {key} = {value} in globals_schema")
+
+
+        logger_json_block(logger, f"Updated globals_schema", context.plan_graph.graph['globals_schema'])
 
         # Check for call_self
         if output.get("call_self") and iteration < max_iterations:

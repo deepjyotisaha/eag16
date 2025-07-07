@@ -366,10 +366,6 @@ class AgentLoop4:
                     {"iteration": 1, "output": output}
             ]
 
-            #logger.info(f"🔄 1 - Final result for step {step_id}: {output}")
-            final_result = output  
-            #logger.info(f"🔄 2 - Final result for step {step_id}: {output}")     
-
             if output.get("call_self"):
                 logger_step(logger, f"🔄 Call self detected for step: {step_id}")
 
@@ -392,23 +388,17 @@ class AgentLoop4:
                     iterations_data.append(None)
                     
 
-            #logger.info(f"🔄 3 - Final result for step {step_id}: {output}")
-            #logger.info(f"🔄 4 - Final result for step {step_id}: {final_result}")
-
-            #logger_json_block(logger, f"🔄 Final result for step {step_id}", final_result)
-            #logger_json_block(logger, f"🔄 Final output for step {step_id}", output)
-
-
             # Store iterations in the node data for session persistence
             step_data = context.get_step_data(step_id)
             step_data['iterations'] = iterations_data
+            #NOTE: This needs to be fixed, we need to check if call_self was used in the final iteration
             step_data['call_self_used'] = True
-            step_data['final_iteration_output'] = final_result
+            step_data['final_iteration_output'] = output
 
             logger_step(logger, f"✅ Step {step_id} completed successfully")
             #logger_json_block(logger, f"✅ Step {step_id} completed successfully, final result:", final_result)
                 
-            return final_result
+            return output
         else:
             return result
 

@@ -335,7 +335,7 @@ class AgentLoop4:
 
         # Execute first iteration
         agent_input = build_agent_input()
-        logger.info(f"🔄 Running agent {agent_type} with input: {agent_input}")
+        logger.info(f"🔄 Running agent {agent_type} for step {step_id}")
         logger_json_block(logger, f"🔄 Agent Input for step {step_id}", agent_input)
         result = await self.agent_runner.run_agent(agent_type, agent_input)
         logger_json_block(logger, f"🔄 Agent Output for step {step_id}", result)
@@ -365,6 +365,8 @@ class AgentLoop4:
             iterations_data = [
                     {"iteration": 1, "output": output}
             ]
+
+            logger_json_block(logger, f"🔄 Output data for step {step_id}", output)
 
             if output.get("call_self"):
                 logger_step(logger, f"🔄 Call self detected for step: {step_id}")

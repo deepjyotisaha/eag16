@@ -172,7 +172,10 @@ For timeline, schedule, or flow-based projects:
 
 Simulate layered planning like a real team:
 
-* **RetrieverAgent**: Gathers raw external or document-based info
+* **RetrieverAgent**: Gathers raw external or document-based info. 
+ -  Capable of handling **multi-step** search and retrieval steps to fetch the desired content. 
+ -  You do not need to call this agent multiple times for the same search query, it is capable of handling multi-step search
+ -  Always invoke it only once for one specific information, like detailed information on something
 * **ThinkerAgent**: Clusters, compares, or resolves logic
 * **DistillerAgent**: Synthesizes summaries or bullets
 * **CoderAgent**: Thinks, writes, and automatically executes required code in a single atomic step.  

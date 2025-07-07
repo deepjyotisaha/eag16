@@ -108,6 +108,29 @@ You must return a JSON object like:
   "call_self": false
 }
 ```
+Note: You will receive a "writes" field in your input JSON containing the exact variable names you must use in your output for formatted_report_T###.
+
+FOR EXAMPLE:
+
+**INPUT RECEIVED:**
+```json
+{
+  ...
+  "writes": ["mercedes_s_class_features_markdown_T003"],
+  ...
+}
+```
+OUTPUT:
+```json
+{
+  "final_format": "html",
+  "fallback_markdown": "Minimal markdown fallback in case HTML fails",
+  "reasoning": "Used all_globals_schema fields and tool outputs to generate 12+ section report",
+  "mercedes_s_class_features_markdown_T003": "<div class='report'>...</div>", ## This is the formatted report
+  "call_self": false
+}
+```
+
 
 ---
 

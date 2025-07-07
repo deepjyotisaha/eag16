@@ -284,18 +284,18 @@ async def run_user_code(output_data: dict, multi_mcp, session_id: str = "default
         # Phase 2: Execute Python Code (if present)
         if "code_variants" in output_data and output_data["code_variants"]:
             log_step(f"🐍 Phase 2: Python code execution for step {step_id}, iteration {iteration}", symbol="⚙️")
-            logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - iteration {iteration} - session {session_id} - code:: {output_data}")
+            #logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - iteration {iteration} - session {session_id} - code:: {output_data}")
             
             code_results = await execute_code_variants(
                 output_data["code_variants"], multi_mcp, session_id, globals_schema, inputs
             )
-            logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - iteration {iteration} - session {session_id} - code results:: {code_results}")
+            #logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - iteration {iteration} - session {session_id} - code results:: {code_results}")
             results["code_results"] = code_results
             results["operations"].append("python_code")
             
             if code_results.get("created_files"):
                 results["created_files"].extend(code_results["created_files"])
-                logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - iteration {iteration} - session {session_id} - created files:: {code_results['created_files']}")
+                #logger.info(f"🐍 Phase 2: Python code execution for step {step_id} - iteration {iteration} - session {session_id} - created files:: {code_results['created_files']}")
             
             if code_results["status"] != "success":
                 if results["status"] == "success":

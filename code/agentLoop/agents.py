@@ -106,7 +106,7 @@ class AgentRunner:
             output = parse_llm_json(response)
             # import pdb; pdb.set_trace()
 
-            logger_json_block(logger, f"Output for {agent_type} agent for step {step_id}", output)
+            #logger_json_block(logger, f"Output for {agent_type} agent for step {step_id}", output)
             
             # Calculate input text for costing
             input_text = str(input_data)

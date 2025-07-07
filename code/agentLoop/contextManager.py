@@ -208,23 +208,41 @@ class ExecutionContextManager:
     
     def _merge_execution_results(self, original_output, execution_result):
         """Merge execution results into agent output"""
+        logger.info(f"🔄 Inside Merge: Merging execution results into agent output")
+        logger_json_block(logger, f"🔄 Original output", original_output)
+        logger_json_block(logger, f"🔄 Execution result", execution_result)
         if not isinstance(original_output, dict):
+            logger.info(f"🔄 Inside Merge: Original output is not a dict")
             return original_output
         
         enhanced_output = original_output.copy()
-        enhanced_output["execution_result"] = execution_result.get("result")
-        enhanced_output["execution_status"] = execution_result.get("status")
-        enhanced_output["execution_error"] = execution_result.get("error") 
-        enhanced_output["execution_time"] = execution_result.get("execution_time")
-        enhanced_output["executed_variant"] = execution_result.get("executed_variant")
+        agent_output = enhanced_output.get("output", {})
+        logger_json_block(logger, f"🔄 Inside Merge: Copied Enhanced output", enhanced_output)
+        logger_json_block(logger, f"🔄 Inside Merge: Copied Agent output", agent_output)
+        #enhanced_output["execution_result"] = execution_result.get("code_results")
+        #enhanced_output["execution_status"] = execution_result.get("status")
+        #enhanced_output["execution_error"] = execution_result.get("error") 
+        #enhanced_output["execution_time"] = execution_result.get("total_time")
+        #enhanced_output["executed_variant"] = execution_result.get("executed_variant")
+
+        agent_output["execution_result"] = execution_result.get("code_results")
+        agent_output["execution_status"] = execution_result.get("status")
+        agent_output["execution_error"] = execution_result.get("error") 
+        agent_output["execution_time"] = execution_result.get("total_time")
+        agent_output["executed_variant"] = execution_result.get("executed_variant")
+        logger_json_block(logger, f"🔄 Inside Merge: Partial Agent output", agent_output)
         
         # Merge execution results directly
-        if execution_result.get("status") == "success":
-            result_data = execution_result.get("result", {})
-            if isinstance(result_data, dict):
-                for key, value in result_data.items():
-                    if key not in enhanced_output:
-                        enhanced_output[key] = value
+        #if agent_output.get("status") == "success":
+        #    logger.info(f"🔄 Inside Merge: Enhanced output is success")
+        #    result_data = agent_output.get("result", {})
+        #    if isinstance(result_data, dict):
+        #        for key, value in result_data.items():
+        #            if key not in enhanced_output:
+        #                enhanced_output[key] = value
+
+        logger.info(f"🔄 Inside Merge: Enhanced output")
+        logger_json_block(logger, f"🔄 Enhanced output", enhanced_output)
         
         return enhanced_output
     
@@ -315,46 +333,65 @@ class ExecutionContextManager:
         
         # CODE EXECUTION CHECK
         execution_result = None
-        if self._has_executable_code(output):
-            try:
-                execution_result = await self._auto_execute_code(step_id, output)
-                output = self._merge_execution_results(output, execution_result)
-            except Exception as e:
-                print(f"❌ Code execution failed: {e}")
+        #if self._has_executable_code(output):
+        #    try:
+        #        #execution_result = await self._auto_execute_code(step_id, output)
+        #        execution_result = output.get("code_results", {})
+        #        logger_json_block(logger, f"🔄 Context Manager - Execution result for step {step_id}", execution_result)
+        #        #output = self._merge_execution_results(output, execution_result)
+        #        #logger_json_block(logger, f"🔄 Context Manager - Merged execution result with output for step {step_id}", output)
+        #    except Exception as e:
+        #        print(f"❌ Code execution failed: {e}")
         
         # EXTRACTION LOGIC - Handle both code execution results AND direct agent outputs
         globals_schema = self.plan_graph.graph['globals_schema']
+
+        logger_json_block(logger, f"🔄 Inside Marked done: Output", output)
+
+        execution_result = output.get("execution_result", {})
+
+        logger_json_block(logger, f"🔄 Inside Marked done: Execution result", execution_result)
+
         
         if writes:
             for write_key in writes:
                 extracted = False
+                logger.info(f"🔄 Inside Marked done: Extracting {write_key}")
                 
                 # Strategy 1: Extract from code execution results (RetrieverAgent, CoderAgent)
                 if execution_result and execution_result.get("status") == "success":
                     result_data = execution_result.get("result", {})
                     
                     if write_key in result_data:
+                        logger.info(f"🔄 Inside Marked done: Extracting {write_key} = {result_data[write_key]}")
                         globals_schema[write_key] = result_data[write_key]
+                        logger_json_block(logger, f"🔄 Inside Marked done: Updated globals_schema with {write_key} = {result_data[write_key]}", globals_schema)
                         print(f"✅ Extracted {write_key} = {result_data[write_key]}")
                         extracted = True
                     elif len(result_data) == 1 and len(writes) == 1:
                         key, value = next(iter(result_data.items()))
+                        logger.info(f"🔄 Inside Marked done: Extracting {write_key} = {value} (from {key})")
                         globals_schema[write_key] = value
                         print(f"✅ Extracted {write_key} = {value} (from {key})")
+                        logger_json_block(logger, f"🔄 Inside Marked done: Updated globals_schema with {write_key} = {value}", globals_schema)
                         extracted = True
                 
                 # Strategy 2: Extract from direct agent output (ThinkerAgent, DistillerAgent, FormatterAgent)
                 if not extracted and output and isinstance(output, dict):
                     if write_key in output:
+                        logger.info(f"🔄 Inside Marked done: Extracting {write_key} = {output[write_key]} (direct)")
                         globals_schema[write_key] = output[write_key]
+                        logger_json_block(logger, f"🔄 Inside Marked done: Updated globals_schema with {write_key} = {output[write_key]}", globals_schema)
                         print(f"✅ Extracted {write_key} = {output[write_key]} (direct)")
                         extracted = True
                 
                 # Strategy 3: Emergency fallback - try to find any matching data
                 if not extracted:
+                    logger.info(f"🔄 Inside Marked done: Could not extract {write_key}")
                     print(f"⚠️  Could not extract {write_key}")
                     # Set empty placeholder to prevent downstream errors
                     globals_schema[write_key] = []
+                    logger_json_block(logger, f"🔄 Inside Marked done: Set empty placeholder for {write_key}", globals_schema)
         
         # Store results
         node_data['status'] = 'completed'
@@ -371,6 +408,9 @@ class ExecutionContextManager:
             end = datetime.fromisoformat(node_data['end_time'])
             node_data['execution_time'] = (end - start).total_seconds()
         
+        logger_step(logger, f"🔄 Context Manager - Marked done for step {step_id}")
+        logger_json_block(logger, f"🔄 Context Manager - Node data", node_data)
+        logger_json_block(logger, f"🔄 Context Manager - Globals schema", globals_schema)
         print(f"✅ {step_id} completed successfully")
         self._auto_save()
 

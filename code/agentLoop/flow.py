@@ -156,11 +156,13 @@ class AgentLoop4:
             
             # ✅ EXECUTE AGENTS FOR REAL
             #logger.info(f"🔄 Executing agents for real")
-            logger_step(logger, f"🔄 Executing agents for real for steps: {ready_steps}")
+            logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps}")
             #tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
             #tasks = [self._execute_step_self(step_id, context) for step_id in ready_steps]
             tasks = [self._execute_step_try(step_id, context) for step_id in ready_steps]
             results = await asyncio.gather(*tasks, return_exceptions=True)
+            logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps} - Completed")
+            logger_json_block(logger, f"🔄 Results of executing agents steps which are ready for execution: {ready_steps}", results)
 
             # Process results
             for step_id, result in zip(ready_steps, results):
@@ -168,14 +170,14 @@ class AgentLoop4:
                 logger_json_block(logger, f"🔄 Processing Result for step {step_id}", result)
                 if isinstance(result, Exception):
                     visualizer.mark_failed(step_id, result)
-                    logger.info(f"🔄 Marking step {step_id} as failed")
+                    logger.info(f"❌ Marking step {step_id} as failed")
                     context.mark_failed(step_id, str(result))
                 elif result["success"]:
-                    logger.info(f"🔄 Marking step {step_id} as completed")
+                    logger.info(f"✅ Marking step {step_id} as completed")
                     visualizer.mark_completed(step_id)
                     await context.mark_done(step_id, result["output"])
                 else:
-                    logger.info(f"🔄 Marking step {step_id} as failed")
+                    logger.info(f"❌ Marking step {step_id} as failed")
                     visualizer.mark_failed(step_id, result["error"])
                     context.mark_failed(step_id, result["error"])
 
@@ -294,7 +296,7 @@ class AgentLoop4:
         agent_type = step_data["agent"]
 
         logger_step(logger, f"🔄 Executing step: {step_id} by calling agent {step_data['agent']}")
-        logger.info(f"🔄 Executing step: {step_id} by calling agent {step_data['agent']}")
+        #logger.info(f"🔄 Executing step: {step_id} by calling agent {step_data['agent']}")
         
         # Get inputs from NetworkX graph
         inputs = context.get_inputs(step_data.get("reads", []))
@@ -334,9 +336,9 @@ class AgentLoop4:
         # Execute first iteration
         agent_input = build_agent_input()
         logger.info(f"🔄 Running agent {agent_type} with input: {agent_input}")
-        logger_json_block(logger, f"Agent Input for step {step_id}", agent_input)
+        logger_json_block(logger, f"🔄 Agent Input for step {step_id}", agent_input)
         result = await self.agent_runner.run_agent(agent_type, agent_input)
-        logger_json_block(logger, f"Agent Result for step {step_id}", result)
+        logger_json_block(logger, f"🔄 Agent Output for step {step_id}", result)
         if result["success"]:
             output = result["output"]
 
@@ -345,27 +347,16 @@ class AgentLoop4:
                 execution_result = await context._auto_execute_code(step_id, output)
                 logger_json_block(logger, f"🔄 Execution result for step {step_id}", execution_result)
                 if execution_result.get("status") == "success":
-                    #output = context._merge_execution_results(output, execution_result)
-                    logger_step(logger, f"🔄 About to merge execution result with output for step {step_id}")
-                    logger_json_block(logger, f"🔄 Output for step {step_id}", output)
-                    logger_json_block(logger, f"🔄 Execution result for step {step_id}", execution_result)
-                    #output = {**output, **execution_result}
-                    #output = context._merge_execution_results(output, execution_result)
-                    logger_json_block(logger, f"🔄 Merged execution result with output for step {step_id}", {**output, **execution_result})
-                    #output = {**output, **execution_result}
-                    #output = context._merge_execution_results(output, execution_result)
+                    logger_step(logger, f"🔄 Code execution successful for step {step_id}, merging execution result with output")
+                    #logger_json_block(logger, f"🔄 Output for step {step_id}", output)
+                    #logger_json_block(logger, f"🔄 Execution result for step {step_id}", execution_result)
+ 
                     output = context._merge_execution_results(result, execution_result)
-                    logger.info(f"🔄 Merged execution result with output for step {step_id}")
-                    logger.info(f"🔄 Merged execution result with output for step {step_id}: {output}")
-                    #logger_json_block(logger, f"🔄 Merged execution result with output for step {step_id}", {output})
-                    #logger_json_block(logger, f"🔄 Merged again execution result with output for step {step_id}", {output})
-                    #logger_json_block(logger, f"🔄 Merged execution result with output for step {step_id}", {output})
-                    #execution_data = execution_result.get("result", {})
-                    #logger_json_block(logger, f"Execution data for step {step_id}", execution_data)
-                    #inputs = {**inputs, **execution_data}  # Update inputs for iteration 2
-                    #logger_json_block(logger, f"Merged Inputs for step {step_id}", inputs)
+                    logger.info(f"✅ Merged execution result with output for step {step_id}")
+                    #logger_json_block(logger, f"✅ Merged execution result with output for step {step_id}, output:", output)
+
                 else:
-                    logger.info(f"🔄 Execution failed for step {step_id}: {execution_result}")
+                    logger.info(f"❌ Execution failed for step {step_id}: {execution_result}")
             else:
                 logger_step(logger, f"🔄 No code execution for step: {step_id}, assigning result to output")
                 output = result        
@@ -375,9 +366,9 @@ class AgentLoop4:
                     {"iteration": 1, "output": output}
             ]
 
-            logger.info(f"🔄 1 - Final result for step {step_id}: {output}")
+            #logger.info(f"🔄 1 - Final result for step {step_id}: {output}")
             final_result = output  
-            logger.info(f"🔄 2 - Final result for step {step_id}: {output}")     
+            #logger.info(f"🔄 2 - Final result for step {step_id}: {output}")     
 
             if output.get("call_self"):
                 logger_step(logger, f"🔄 Call self detected for step: {step_id}")
@@ -401,11 +392,11 @@ class AgentLoop4:
                     iterations_data.append(None)
                     
 
-            logger.info(f"🔄 3 - Final result for step {step_id}: {output}")
-            logger.info(f"🔄 4 - Final result for step {step_id}: {final_result}")
+            #logger.info(f"🔄 3 - Final result for step {step_id}: {output}")
+            #logger.info(f"🔄 4 - Final result for step {step_id}: {final_result}")
 
-            logger_json_block(logger, f"🔄 Final result for step {step_id}", final_result)
-            logger_json_block(logger, f"🔄 Final output for step {step_id}", output)
+            #logger_json_block(logger, f"🔄 Final result for step {step_id}", final_result)
+            #logger_json_block(logger, f"🔄 Final output for step {step_id}", output)
 
 
             # Store iterations in the node data for session persistence
@@ -414,11 +405,8 @@ class AgentLoop4:
             step_data['call_self_used'] = True
             step_data['final_iteration_output'] = final_result
 
-            logger.info(f"🔄 5 - Final result for step {step_id}: {final_result}")
-            logger.info(f"🔄 6 - Final result Output for step {step_id}: {final_result['output']}")
-
-            #logger_json_block(logger, f"🔄 Final result for step {step_id}", final_result)
-            #logger_json_block(logger, f"🔄 Final output for step {step_id}", output)
+            logger_step(logger, f"✅ Step {step_id} completed successfully")
+            #logger_json_block(logger, f"✅ Step {step_id} completed successfully, final result:", final_result)
                 
             return final_result
         else:

@@ -51,6 +51,7 @@ You retrieve **as-is**, from sources including:
 - Always generate `code_variants` when tools are available
 - Use tools immediately to gather data
 - Only defer to next iteration what truly requires previous results
+- Always use ONLY the variable in the "results" from previous steps 
 
 ---
 
@@ -162,9 +163,22 @@ You retrieve **as-is**, from sources including:
   "agent_prompt": "Extract detailed flight information from major airline URLs only",
   "writes": ["blr_to_nyc_flight_options_T001"],
   "available_tools": ["webpage_url_to_raw_text", "webpage_url_to_llm_summary"],
-  "flight_urls_1A": ["https://emirates.com/flights", "https://airindia.com/booking", "https://britishairways.com"]
+  "previous_output" {
+    ...
+    "result": {
+      ....
+      "flight_urls_1A": ["https://emirates.com/flights", "https://airindia.com/booking", "https://britishairways.com"]
+      ...
+    ...
+    }
+  }
+ 
 }
 ```
+
+## 🚨 IMPORTANT: 
+    1. The variables which have the data needed for next steps are inside the results section of previous_output
+    2. Always use ONLY these variable names in your code to refer to data obtained from previous steps
 
 **CORRECT OUTPUT (Second Call - Extraction Phase):**
 ```json
@@ -454,9 +468,22 @@ Use only the following tools (in positional form):
   "agent_prompt": "Extract detailed hotel information from the found URLs including prices, ratings, and amenities",
   "writes": ["hotel_research_T005"],
   "available_tools": ["webpage_url_to_raw_text", "webpage_url_to_llm_summary"],
-  "hotel_urls_1A": ["https://booking.com/hotel1", "https://expedia.com/hotel2", "https://hotels.com/hotel3"]
+  "previous_output" { 
+    ...
+    "result": {
+      ....
+
+      "hotel_urls_1A": ["https://booking.com/hotel1", "https://expedia.com/hotel2", "https://hotels.com/hotel3"]
+      ...
+    }
+    ...
+  }
 }
 ```
+
+## 🚨 IMPORTANT: 
+    1. The variables which have the data needed for next steps are inside the results section of previous_output
+    2. Always use ONLY these variable names in your code to refer to data obtained from previous steps
 
 **CORRECT OUTPUT (Second Call):**
 ```json

@@ -353,7 +353,7 @@ class AgentLoop4:
  
                     output = context._merge_execution_results(result, execution_result)
                     logger.info(f"✅ Merged execution result with output for step {step_id}")
-                    await context.update_globals_schema(step_id, output)
+                    await context.update_globals_schema(step_id, output.get("output", {}))
                     #logger_json_block(logger, f"✅ Merged execution result with output for step {step_id}, output:", output)
 
                 else:

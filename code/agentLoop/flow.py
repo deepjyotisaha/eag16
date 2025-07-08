@@ -303,7 +303,7 @@ class AgentLoop4:
         #logger_json_block(logger, "Inputs", inputs)
         
         # 🔧 HELPER FUNCTION: Build agent input (consistent for both iterations)
-        def build_agent_input(instruction=None, previous_output=None, iteration_context=None):
+        def build_agent_input(inputs = None, instruction=None, previous_output=None, iteration_context=None):
             if agent_type == "FormatterAgent":
                 all_globals = context.plan_graph.graph['globals_schema'].copy()
                 return {
@@ -334,7 +334,7 @@ class AgentLoop4:
                 }
 
         # Execute first iteration
-        agent_input = build_agent_input()
+        agent_input = build_agent_input(inputs = inputs)
         logger.info(f"🔄 Running agent {agent_type} for step {step_id}")
         logger_json_block(logger, f"🔄 Agent Input for step {step_id}", agent_input)
         result = await self.agent_runner.run_agent(agent_type, agent_input)
@@ -368,24 +368,58 @@ class AgentLoop4:
 
             logger_json_block(logger, f"🔄 Output data for step {step_id}", output)
 
-            if output.get("call_self"):
+            agent_output = output.get("output", {})
+
+            logger_json_block(logger, f"🔄 Agent output for step {step_id}", agent_output)
+
+            logger_step(logger, f"🔄 Agent output for step {step_id} - call_self: {agent_output.get('call_self')}")
+
+            if agent_output.get("call_self"):
                 logger_step(logger, f"🔄 Call self detected for step: {step_id}")
 
+                inputs = {**inputs, **agent_output.get("writes", {})}
+
+                logger.info(f"🔄 Inputs for step {step_id} - Second iteration: {inputs}")
+
                 second_agent_input = build_agent_input(
-                    instruction=output.get("next_instruction", "Continue the task"),
-                    previous_output=output,
-                    iteration_context=output.get("iteration_context", {})
+                    inputs = inputs,
+                    instruction=agent_output.get("next_instruction", "Continue the task"),
+                    previous_output=agent_output,
+                    iteration_context=agent_output.get("iteration_context", {})
                 )
 
-                logger.info(f"🔄 Running agent {agent_type} for step {step_id} with input (second iteration): {second_agent_input}")
+                logger.info(f"🔄 Running agent {agent_type} for step {step_id} with input for second iteration")
 
                 logger_json_block(logger, f"Agent Input for step {step_id} - Second iteration", second_agent_input)
                 
                 second_result = await self.agent_runner.run_agent(agent_type, second_agent_input)
 
+                logger_json_block(logger, f"Agent Output for step {step_id} - Second iteration", second_result)
+
                 if second_result["success"]:
+                    output = second_result["output"]
+
+                    if context._has_executable_code(output):
+                        logger_step(logger, f"🔄 Need to execute code for step: {step_id} - Second iteration")
+                        execution_result = await context._auto_execute_code(step_id, output)
+                        logger_json_block(logger, f"🔄 Execution result for step {step_id} - Second iteration", execution_result)
+                        if execution_result.get("status") == "success":
+                            logger_step(logger, f"🔄 Code execution successful for step {step_id} - Second iteration, merging execution result with output")
+                            #logger_json_block(logger, f"🔄 Output for step {step_id}", output)
+                            #logger_json_block(logger, f"🔄 Execution result for step {step_id}", execution_result)
+            
+                            output = context._merge_execution_results(second_result, execution_result)
+                            logger.info(f"✅ Merged execution result with output for step {step_id} - Second iteration")
+                            #logger_json_block(logger, f"✅ Merged execution result with output for step {step_id}, output:", output)
+
+                        else:
+                            logger.info(f"❌ Execution failed for step {step_id} - Second iteration: {execution_result}")
+                    else:
+                        logger_step(logger, f"🔄 No code execution for step: {step_id} - Second iteration, assigning result to output")
+                        output = second_result        
+
                     iterations_data.append({"iteration": 2, "output": second_result["output"]})
-                    final_result = second_result
+                    output = second_result
                 else:
                     iterations_data.append(None)
                     

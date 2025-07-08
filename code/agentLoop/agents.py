@@ -89,7 +89,7 @@ class AgentRunner:
             # 3. Build full prompt
             full_prompt = f"{prompt_template.strip()}{tools_text}\n\n```json\n{json.dumps(input_data, indent=2)}\n```"
             
-            #logger_prompt(logger, f"Prompt for {agent_type} agent for step {step_id}", full_prompt)
+            logger_prompt(logger, f"Prompt for {agent_type} agent for step {step_id}", full_prompt)
             
             # 4. Create model manager with agent's specified model
             model_manager = ModelManager(config["model"])
@@ -106,7 +106,7 @@ class AgentRunner:
             output = parse_llm_json(response)
             # import pdb; pdb.set_trace()
 
-            #logger_json_block(logger, f"Output for {agent_type} agent for step {step_id}", output)
+            logger_json_block(logger, f"Output for {agent_type} agent for step {step_id}", output)
             
             # Calculate input text for costing
             input_text = str(input_data)

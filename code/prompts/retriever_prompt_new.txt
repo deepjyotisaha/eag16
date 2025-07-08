@@ -227,6 +227,8 @@ Example:
 - Use positional arguments only
 - Always end with `return {...}`
 - Variable names should be descriptive
+- Never use previous_output or any other response data data fields from previous_output as variable names
+- The output of the previous step will be available in the "writes" field, you can reference the same in the next step if results are available
 
 ### **Good Examples:**
 ```python

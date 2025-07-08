@@ -580,3 +580,5 @@ if __name__ == "__main__":
 # 🔧 debugger> status
 # 🔧 debugger> replay T012
 # 🔧 debugger> save
+
+#load memory/session_summaries_index/2025/05/06/session_51745677.json

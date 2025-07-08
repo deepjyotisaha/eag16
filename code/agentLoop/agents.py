@@ -89,7 +89,7 @@ class AgentRunner:
             # 3. Build full prompt
             full_prompt = f"{prompt_template.strip()}{tools_text}\n\n```json\n{json.dumps(input_data, indent=2)}\n```"
             
-            #logger_prompt(logger, f"Prompt for {agent_type} agent for step {step_id}", full_prompt)
+            logger_prompt(logger, f"Prompt for {agent_type} agent for step {step_id}", full_prompt)
             
             # 4. Create model manager with agent's specified model
             model_manager = ModelManager(config["model"])

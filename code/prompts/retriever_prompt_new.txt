@@ -31,6 +31,7 @@ You retrieve **as-is**, from sources including:
 - Need to process results from first tool call in a second iteration
 - Workflow has clear step 1 → step 2 dependency
 - Task asks for "detailed" or "comprehensive" data requiring 2+ tool calls
+- If the query demands "detailed" or "comprehensive" data, prefer multiple steps
 
 **Set `call_self: false` when:**
 - Single tool call can complete the entire task
@@ -50,6 +51,7 @@ You retrieve **as-is**, from sources including:
 - Always generate `code_variants` when tools are available
 - Use tools immediately to gather data
 - Only defer to next iteration what truly requires previous results
+- Always use ONLY the variable in the "results" from previous steps 
 
 ---
 
@@ -77,7 +79,7 @@ You retrieve **as-is**, from sources including:
 ```json
 {
   "result_variable_T001": [],  // Will be populated by code execution
-  "call_self": true,
+  "call_self": false,
   "code_variants": {
     "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'page_content_1A': content}",
     "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'pdf_content_1B': text}"
@@ -118,7 +120,7 @@ You retrieve **as-is**, from sources including:
 ```json
 {
   "nyc_hotel_options_T004": [],
-  "call_self": true,
+  "call_self": false,
   "code_variants": {
     "CODE_1A": "results = search_web_with_text_content('NYC hotels Manhattan booking prices amenities', 8)\nreturn {'nyc_hotel_options_T004': results}",
     "CODE_1B": "data = search_web_with_text_content('New York City hotels under $200 ratings reviews', 6)\nreturn {'nyc_hotel_options_T004': data}"
@@ -161,15 +163,28 @@ You retrieve **as-is**, from sources including:
   "agent_prompt": "Extract detailed flight information from major airline URLs only",
   "writes": ["blr_to_nyc_flight_options_T001"],
   "available_tools": ["webpage_url_to_raw_text", "webpage_url_to_llm_summary"],
-  "flight_urls_1A": ["https://emirates.com/flights", "https://airindia.com/booking", "https://britishairways.com"]
+  "previous_output" {
+    ...
+    "result": {
+      ....
+      "flight_urls_1A": ["https://emirates.com/flights", "https://airindia.com/booking", "https://britishairways.com"]
+      ...
+    ...
+    }
+  }
+ 
 }
 ```
+
+## 🚨 IMPORTANT: 
+    1. The variables which have the data needed for next steps are inside the results section of previous_output
+    2. Always use ONLY these variable names in your code to refer to data obtained from previous steps
 
 **CORRECT OUTPUT (Second Call - Extraction Phase):**
 ```json
 {
   "blr_to_nyc_flight_options_T001": [],
-  "call_self": true,
+  "call_self": false,
   "code_variants": {
     "CODE_2A": "results = []\nfor url in flight_urls_1A[:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'blr_to_nyc_flight_options_T001': results}",
     "CODE_2B": "details = []\nfor url in flight_urls_1A[:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract flight prices, schedules, and booking details')\n    details.append(info)\nreturn {'blr_to_nyc_flight_options_T001': details}"
@@ -192,7 +207,7 @@ You retrieve **as-is**, from sources including:
 ```json
 {
   "fusion_startups_T010": [],
-  "call_self": true,
+  "call_self": false,
   "code_variants": {
     "CODE_1A": "results = search_web_with_text_content('nuclear fusion reactor startups companies funding', 8)\nreturn {'fusion_startups_T010': results}",
     "CODE_1B": "data = search_web_with_text_content('nuclear fusion energy startups 2024 investment', 6)\nreturn {'fusion_startups_T010': data}"
@@ -226,6 +241,8 @@ Example:
 - Use positional arguments only
 - Always end with `return {...}`
 - Variable names should be descriptive
+- Never use previous_output or any other response data data fields from previous_output as variable names
+- The output of the previous step will be available in the "writes" field, you can reference the same in the next step if results are available
 
 ### **Good Examples:**
 ```python
@@ -297,7 +314,7 @@ If tools fail or no relevant tools available:
 ```json
 {
   "flight_options_T001": [],
-  "call_self": true,
+  "call_self": false,
   "code_variants": {
     "CODE_1A": "results = search_web_with_text_content('Bangalore to NYC flights booking prices', 8)\nreturn {'flight_options_T001': results}",
     "CODE_1B": "urls = fetch_search_urls('BLR to JFK flights Emirates Air India', 10)\nreturn {'flight_options_T001': urls}"
@@ -362,7 +379,7 @@ If tools fail or no relevant tools available:
 ```json
 {
   "result_variable_T001": [],  // Use exact name from "writes" field
-  "call_self": true,
+  "call_self": false,
   "code_variants": {
     "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'result_variable_T001': content}",
     "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'result_variable_T001': text}"
@@ -401,7 +418,7 @@ Use only the following tools (in positional form):
 ```json
 {
   "flight_options_T001": [],
-  "call_self": true,
+  "call_self": false,
   "code_variants": {
     "CODE_1A": "urls = fetch_search_urls('Bangalore to NYC flights booking', 10)\nreturn {'flight_options_T001': urls}",
     "CODE_1B": "urls = fetch_search_urls('BLR to JFK flights Emirates Air India', 8)\nreturn {'flight_options_T001': urls}"
@@ -451,15 +468,28 @@ Use only the following tools (in positional form):
   "agent_prompt": "Extract detailed hotel information from the found URLs including prices, ratings, and amenities",
   "writes": ["hotel_research_T005"],
   "available_tools": ["webpage_url_to_raw_text", "webpage_url_to_llm_summary"],
-  "hotel_urls_1A": ["https://booking.com/hotel1", "https://expedia.com/hotel2", "https://hotels.com/hotel3"]
+  "previous_output" { 
+    ...
+    "result": {
+      ....
+
+      "hotel_urls_1A": ["https://booking.com/hotel1", "https://expedia.com/hotel2", "https://hotels.com/hotel3"]
+      ...
+    }
+    ...
+  }
 }
 ```
+
+## 🚨 IMPORTANT: 
+    1. The variables which have the data needed for next steps are inside the results section of previous_output
+    2. Always use ONLY these variable names in your code to refer to data obtained from previous steps
 
 **CORRECT OUTPUT (Second Call):**
 ```json
 {
   "hotel_research_T005": [],
-  "call_self": true,
+  "call_self": false,
   "code_variants": {
     "CODE_2A": "results = []\nfor url in hotel_urls_1A[:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'hotel_research_T005': results}",
     "CODE_2B": "details = []\nfor url in hotel_urls_1A[:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract hotel name, price, rating, amenities')\n    details.append(info)\nreturn {'hotel_research_T005': details}"
@@ -490,7 +520,7 @@ Use only the following tools (in positional form):
 {
   "fusion_startups_T010": [],
   "quantum_startups_T011": [],
-  "call_self": true,
+  "call_self": false,
   "code_variants": {
     "CODE_1A": "fusion_urls = fetch_search_urls('nuclear fusion reactor startups companies', 8)\nquantum_urls = fetch_search_urls('quantum computing startups companies', 8)\nreturn {'fusion_startups_T010': fusion_urls, 'quantum_startups_T011': quantum_urls}",
     "CODE_1B": "fusion_companies = fetch_search_urls('nuclear fusion energy startups 2024', 6)\nquantum_companies = fetch_search_urls('quantum computing AI startups', 6)\nreturn {'fusion_startups_T010': fusion_companies, 'quantum_startups_T011': quantum_companies}"

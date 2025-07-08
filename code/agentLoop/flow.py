@@ -156,19 +156,27 @@ class AgentLoop4:
             
             # ✅ EXECUTE AGENTS FOR REAL
             #logger.info(f"🔄 Executing agents for real")
-            logger_step(logger, f"🔄 Executing agents for real for steps: {ready_steps}")
-            tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
+            logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps}")
+            #tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
+            tasks = [self._execute_step_self(step_id, context) for step_id in ready_steps]
             results = await asyncio.gather(*tasks, return_exceptions=True)
+            logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps} - Completed")
+            logger_json_block(logger, f"🔄 Results of executing agents steps which are ready for execution: {ready_steps}", results)
 
             # Process results
             for step_id, result in zip(ready_steps, results):
+                #logger.info(f"🔄 Result for step {step_id}: {result}")
+                logger_json_block(logger, f"🔄 Processing Result for step {step_id}", result)
                 if isinstance(result, Exception):
                     visualizer.mark_failed(step_id, result)
+                    logger.info(f"❌ Marking step {step_id} as failed")
                     context.mark_failed(step_id, str(result))
                 elif result["success"]:
+                    logger.info(f"✅ Marking step {step_id} as completed")
                     visualizer.mark_completed(step_id)
                     await context.mark_done(step_id, result["output"])
                 else:
+                    logger.info(f"❌ Marking step {step_id} as failed")
                     visualizer.mark_failed(step_id, result["error"])
                     context.mark_failed(step_id, result["error"])
 
@@ -240,7 +248,9 @@ class AgentLoop4:
                     execution_result = await context._auto_execute_code(step_id, output)
                     if execution_result.get("status") == "success":
                         execution_data = execution_result.get("result", {})
+                        logger_json_block(logger, f"Execution data for step {step_id}", execution_data)
                         inputs = {**inputs, **execution_data}  # Update inputs for iteration 2
+                        logger_json_block(logger, f"Merged Inputs for step {step_id}", inputs)
                 
                 # Execute second iteration with consistent input structure
                 second_agent_input = build_agent_input(
@@ -275,6 +285,166 @@ class AgentLoop4:
                 return final_result
             else:
                 return result
+        else:
+            return result
+        
+    async def _execute_step_self(self, step_id, context, max_iterations=5):
+        """Execute a single step with call_self support"""
+
+        step_data = context.get_step_data(step_id)
+        agent_type = step_data["agent"]
+
+        logger_step(logger, f"🔄 Executing step: {step_id} by calling agent {step_data['agent']}")
+        #logger.info(f"🔄 Executing step: {step_id} by calling agent {step_data['agent']}")
+        
+        # Get inputs from NetworkX graph
+        inputs = context.get_inputs(step_data.get("reads", []))
+        #logger_json_block(logger, "Inputs", inputs)
+        
+        # 🔧 HELPER FUNCTION: Build agent input (consistent for both iterations)
+        def build_agent_input(inputs = None, instruction=None, previous_output=None, iteration_context=None):
+            if agent_type == "FormatterAgent":
+                all_globals = context.plan_graph.graph['globals_schema'].copy()
+                return {
+                    "step_id": step_id,
+                    "agent_prompt": instruction or step_data.get("agent_prompt", step_data["description"]),
+                    "reads": step_data.get("reads", []),
+                    "writes": step_data.get("writes", []),
+                    "inputs": inputs,
+                    "all_globals_schema": all_globals,  # ✅ ALWAYS included for FormatterAgent
+                    "original_query": context.plan_graph.graph['original_query'],
+                    "session_context": {
+                        "session_id": context.plan_graph.graph['session_id'],
+                        "created_at": context.plan_graph.graph['created_at'],
+                        "file_manifest": context.plan_graph.graph['file_manifest']
+                    },
+                    **({"previous_output": previous_output} if previous_output else {}),
+                    **({"iteration_context": iteration_context} if iteration_context else {})
+                }
+            else:
+                return {
+                    "step_id": step_id,
+                    "agent_prompt": instruction or step_data.get("agent_prompt", step_data["description"]),
+                    "reads": step_data.get("reads", []),
+                    "writes": step_data.get("writes", []),
+                    "inputs": inputs,
+                    **({"previous_output": previous_output} if previous_output else {}),
+                    **({"iteration_context": iteration_context} if iteration_context else {})
+                }
+
+        # Execute first iteration
+        agent_input = build_agent_input(inputs = inputs)
+        logger.info(f"🔄 Running agent {agent_type} for step {step_id}")
+        logger_json_block(logger, f"🔄 Agent Input for step {step_id}", agent_input)
+        result = await self.agent_runner.run_agent(agent_type, agent_input)
+        logger_json_block(logger, f"🔄 Agent Output for step {step_id}", result)
+        if result["success"]:
+            output = result["output"]
+
+            if context._has_executable_code(output):
+                logger_step(logger, f"🔄 Need to execute code for step: {step_id}")
+                execution_result = await context._auto_execute_code(step_id, output)
+                logger_json_block(logger, f"🔄 Execution result for step {step_id}", execution_result)
+                if execution_result.get("status") == "success":
+                    logger_step(logger, f"🔄 Code execution successful for step {step_id}, merging execution result with output")
+                    #logger_json_block(logger, f"🔄 Output for step {step_id}", output)
+                    #logger_json_block(logger, f"🔄 Execution result for step {step_id}", execution_result)
+ 
+                    output = context._merge_execution_results(result, execution_result)
+                    logger.info(f"✅ Merged execution result with output for step {step_id}")
+                    await context.update_globals_schema(step_id, output.get("output", {}))
+                    #logger_json_block(logger, f"✅ Merged execution result with output for step {step_id}, output:", output)
+
+                else:
+                    logger.info(f"❌ Execution failed for step {step_id}: {execution_result}")
+            else:
+                logger_step(logger, f"🔄 No code execution for step: {step_id}, assigning result to output")
+                output = result        
+            
+            # 💾 CRITICAL: Store iteration data in session
+            iterations_data = [
+                    {"iteration": 1, "output": output}
+            ]
+
+            logger_json_block(logger, f"🔄 Output data for step {step_id}", output)
+
+            agent_output = output.get("output", {})
+
+            logger_json_block(logger, f"🔄 Agent output for step {step_id}", agent_output)
+
+            logger_step(logger, f"🔄 Agent output for step {step_id} - call_self: {agent_output.get('call_self')}")
+
+            # 🔧 CHANGE: Add iteration counter and max_iterations check
+            iteration_count = 1
+            while agent_output.get("call_self") and iteration_count < max_iterations:
+                logger_step(logger, f"🔄 Call self detected for step: {step_id} (iteration {iteration_count + 1}/{max_iterations})")
+
+                inputs = {**inputs, **agent_output.get("writes", {})}
+
+                logger.info(f"🔄 Inputs for step {step_id} - iteration {iteration_count + 1}/{max_iterations}: {inputs}")
+
+                second_agent_input = build_agent_input(
+                    inputs = inputs,
+                    instruction=agent_output.get("next_instruction", "Continue the task"),
+                    previous_output=agent_output,
+                    iteration_context=agent_output.get("iteration_context", {})
+                )
+
+                logger.info(f"🔄 Running agent {agent_type} for step {step_id} with input for iteration {iteration_count + 1}/{max_iterations}")
+
+                logger_json_block(logger, f"Agent Input for step {step_id} - iteration {iteration_count + 1}/{max_iterations}", second_agent_input)
+                
+                second_result = await self.agent_runner.run_agent(agent_type, second_agent_input)
+
+                logger_json_block(logger, f"Agent Output for step {step_id} - iteration {iteration_count + 1}/{max_iterations}", second_result)
+
+                if second_result["success"]:
+                    output = second_result["output"]
+
+                    if context._has_executable_code(output):
+                        logger_step(logger, f"🔄 Need to execute code for step: {step_id} - iteration {iteration_count + 1}/{max_iterations}")
+                        execution_result = await context._auto_execute_code(step_id, output, self_iteration=1)
+                        logger_json_block(logger, f"🔄 Execution result for step {step_id} - iteration {iteration_count + 1}/{max_iterations}", execution_result)
+                        if execution_result.get("status") == "success":
+                            logger_step(logger, f"🔄 Code execution successful for step {step_id} - iteration {iteration_count + 1}/{max_iterations}, merging execution result with output")
+                            #logger_json_block(logger, f"🔄 Output for step {step_id}", output)
+                            #logger_json_block(logger, f"🔄 Execution result for step {step_id}", execution_result)
+            
+                            output = context._merge_execution_results(second_result, execution_result)
+                            logger.info(f"✅ Merged execution result with output for step {step_id} - iteration {iteration_count + 1}/{max_iterations}")
+                            #logger_json_block(logger, f"✅ Merged execution result with output for step {step_id}, output:", output)
+
+                        else:
+                            logger.info(f"❌ Execution failed for step {step_id} - iteration {iteration_count + 1}/{max_iterations}: {execution_result}")
+                    else:
+                        logger_step(logger, f"🔄 No code execution for step: {step_id} - iteration {iteration_count + 1}/{max_iterations}, assigning result to output")
+                        output = second_result        
+
+                    iterations_data.append({"iteration": iteration_count + 1, "output": second_result["output"]})
+                    
+                    # 🔧 CRITICAL: Update agent_output for next iteration check
+                    agent_output = output.get("output", {})
+                    iteration_count += 1
+                else:
+                    iterations_data.append(None)
+                    break  # Exit loop on failure
+
+            # Check if we hit max iterations
+            if iteration_count >= max_iterations and agent_output.get("call_self"):
+                logger_step(logger, f"⚠️ Max iterations ({max_iterations}) reached for step {step_id}")
+                step_data['max_iterations_reached'] = True
+
+            # Store iterations in the node data for session persistence
+            step_data = context.get_step_data(step_id)
+            step_data['iterations'] = iterations_data
+            #NOTE: This needs to be fixed, we need to check if call_self was used in the final iteration
+            step_data['call_self_used'] = len(iterations_data) > 1
+            step_data['final_iteration_output'] = output
+
+            logger_step(logger, f"✅ Step {step_id} completed successfully")
+            #logger_json_block(logger, f"✅ Step {step_id} completed successfully, final result:", final_result)
+                
+            return output
         else:
             return result
 

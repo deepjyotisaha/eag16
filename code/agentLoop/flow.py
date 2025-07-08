@@ -353,6 +353,7 @@ class AgentLoop4:
  
                     output = context._merge_execution_results(result, execution_result)
                     logger.info(f"✅ Merged execution result with output for step {step_id}")
+                    await context.update_globals_schema(step_id, output)
                     #logger_json_block(logger, f"✅ Merged execution result with output for step {step_id}, output:", output)
 
                 else:
@@ -401,7 +402,7 @@ class AgentLoop4:
 
                     if context._has_executable_code(output):
                         logger_step(logger, f"🔄 Need to execute code for step: {step_id} - Second iteration")
-                        execution_result = await context._auto_execute_code(step_id, output)
+                        execution_result = await context._auto_execute_code(step_id, output, self_iteration=1)
                         logger_json_block(logger, f"🔄 Execution result for step {step_id} - Second iteration", execution_result)
                         if execution_result.get("status") == "success":
                             logger_step(logger, f"🔄 Code execution successful for step {step_id} - Second iteration, merging execution result with output")

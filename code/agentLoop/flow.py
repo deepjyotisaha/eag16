@@ -158,8 +158,7 @@ class AgentLoop4:
             #logger.info(f"🔄 Executing agents for real")
             logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps}")
             #tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
-            #tasks = [self._execute_step_self(step_id, context) for step_id in ready_steps]
-            tasks = [self._execute_step_try(step_id, context) for step_id in ready_steps]
+            tasks = [self._execute_step_self(step_id, context) for step_id in ready_steps]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps} - Completed")
             logger_json_block(logger, f"🔄 Results of executing agents steps which are ready for execution: {ready_steps}", results)
@@ -289,7 +288,7 @@ class AgentLoop4:
         else:
             return result
         
-    async def _execute_step_try(self, step_id, context):
+    async def _execute_step_self(self, step_id, context, max_iterations=5):
         """Execute a single step with call_self support"""
 
         step_data = context.get_step_data(step_id)
@@ -375,12 +374,14 @@ class AgentLoop4:
 
             logger_step(logger, f"🔄 Agent output for step {step_id} - call_self: {agent_output.get('call_self')}")
 
-            if agent_output.get("call_self"):
-                logger_step(logger, f"🔄 Call self detected for step: {step_id}")
+            # 🔧 CHANGE: Add iteration counter and max_iterations check
+            iteration_count = 1
+            while agent_output.get("call_self") and iteration_count < max_iterations:
+                logger_step(logger, f"🔄 Call self detected for step: {step_id} (iteration {iteration_count + 1}/{max_iterations})")
 
                 inputs = {**inputs, **agent_output.get("writes", {})}
 
-                logger.info(f"🔄 Inputs for step {step_id} - Second iteration: {inputs}")
+                logger.info(f"🔄 Inputs for step {step_id} - iteration {iteration_count + 1}/{max_iterations}: {inputs}")
 
                 second_agent_input = build_agent_input(
                     inputs = inputs,
@@ -389,47 +390,55 @@ class AgentLoop4:
                     iteration_context=agent_output.get("iteration_context", {})
                 )
 
-                logger.info(f"🔄 Running agent {agent_type} for step {step_id} with input for second iteration")
+                logger.info(f"🔄 Running agent {agent_type} for step {step_id} with input for iteration {iteration_count + 1}/{max_iterations}")
 
-                logger_json_block(logger, f"Agent Input for step {step_id} - Second iteration", second_agent_input)
+                logger_json_block(logger, f"Agent Input for step {step_id} - iteration {iteration_count + 1}/{max_iterations}", second_agent_input)
                 
                 second_result = await self.agent_runner.run_agent(agent_type, second_agent_input)
 
-                logger_json_block(logger, f"Agent Output for step {step_id} - Second iteration", second_result)
+                logger_json_block(logger, f"Agent Output for step {step_id} - iteration {iteration_count + 1}/{max_iterations}", second_result)
 
                 if second_result["success"]:
                     output = second_result["output"]
 
                     if context._has_executable_code(output):
-                        logger_step(logger, f"🔄 Need to execute code for step: {step_id} - Second iteration")
+                        logger_step(logger, f"🔄 Need to execute code for step: {step_id} - iteration {iteration_count + 1}/{max_iterations}")
                         execution_result = await context._auto_execute_code(step_id, output, self_iteration=1)
-                        logger_json_block(logger, f"🔄 Execution result for step {step_id} - Second iteration", execution_result)
+                        logger_json_block(logger, f"🔄 Execution result for step {step_id} - iteration {iteration_count + 1}/{max_iterations}", execution_result)
                         if execution_result.get("status") == "success":
-                            logger_step(logger, f"🔄 Code execution successful for step {step_id} - Second iteration, merging execution result with output")
+                            logger_step(logger, f"🔄 Code execution successful for step {step_id} - iteration {iteration_count + 1}/{max_iterations}, merging execution result with output")
                             #logger_json_block(logger, f"🔄 Output for step {step_id}", output)
                             #logger_json_block(logger, f"🔄 Execution result for step {step_id}", execution_result)
             
                             output = context._merge_execution_results(second_result, execution_result)
-                            logger.info(f"✅ Merged execution result with output for step {step_id} - Second iteration")
+                            logger.info(f"✅ Merged execution result with output for step {step_id} - iteration {iteration_count + 1}/{max_iterations}")
                             #logger_json_block(logger, f"✅ Merged execution result with output for step {step_id}, output:", output)
 
                         else:
-                            logger.info(f"❌ Execution failed for step {step_id} - Second iteration: {execution_result}")
+                            logger.info(f"❌ Execution failed for step {step_id} - iteration {iteration_count + 1}/{max_iterations}: {execution_result}")
                     else:
-                        logger_step(logger, f"🔄 No code execution for step: {step_id} - Second iteration, assigning result to output")
+                        logger_step(logger, f"🔄 No code execution for step: {step_id} - iteration {iteration_count + 1}/{max_iterations}, assigning result to output")
                         output = second_result        
 
-                    iterations_data.append({"iteration": 2, "output": second_result["output"]})
-                    output = second_result
+                    iterations_data.append({"iteration": iteration_count + 1, "output": second_result["output"]})
+                    
+                    # 🔧 CRITICAL: Update agent_output for next iteration check
+                    agent_output = output.get("output", {})
+                    iteration_count += 1
                 else:
                     iterations_data.append(None)
-                    
+                    break  # Exit loop on failure
+
+            # Check if we hit max iterations
+            if iteration_count >= max_iterations and agent_output.get("call_self"):
+                logger_step(logger, f"⚠️ Max iterations ({max_iterations}) reached for step {step_id}")
+                step_data['max_iterations_reached'] = True
 
             # Store iterations in the node data for session persistence
             step_data = context.get_step_data(step_id)
             step_data['iterations'] = iterations_data
             #NOTE: This needs to be fixed, we need to check if call_self was used in the final iteration
-            step_data['call_self_used'] = True
+            step_data['call_self_used'] = len(iterations_data) > 1
             step_data['final_iteration_output'] = output
 
             logger_step(logger, f"✅ Step {step_id} completed successfully")

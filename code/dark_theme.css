@@ -1,0 +1,16 @@
+
+body {
+    background-color: #333;
+    color: #f0f0f0;
+    font-family: sans-serif;
+}
+
+a {
+    color: #80bfff;
+}
+
+a:hover {
+    color: #ffffff;
+}
+
+/* Add more styles as needed */

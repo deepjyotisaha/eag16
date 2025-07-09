@@ -30,7 +30,7 @@ agents:
     mcp_servers: []
 
   CoderAgent:
-    prompt_file: "prompts/coder_prompt.txt"
+    prompt_file: "prompts/coder_prompt_new.txt"
     model: "gemini"
     mcp_servers: ["documents", "websearch"]  # ✅ Fixed: Give CoderAgent web tools
 

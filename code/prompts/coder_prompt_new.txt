@@ -94,7 +94,7 @@ Your job is to generate **code** — either:
 ## ✅ FILE HANDLING INSTRUCTIONS
 THE FILE HANDLING INSTRUCTIONS ARE VALID FOR THE FOLLOWING TYPE OF FILES: HTML, CSS OR JS
 
-- Full file content (if any) will be present in `globals_schema`:
+- Full file content (if any) will be present in `the following format:
 ```json
 "layout_html_3A": {
   "path": "layout.html",
@@ -179,7 +179,7 @@ if layout_html_3A:
         }
 ```
 
-IMPORTANT: Notice how the content is accessed from globals_schema using the 'layout_html_3A' directly.
+🚨 IMPORTANT: Notice how the content is accessed from `layout_html_3A` using `layout_html_3A["content"]`
 
 
 ---

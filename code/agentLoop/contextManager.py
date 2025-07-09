@@ -395,9 +395,22 @@ class ExecutionContextManager:
                 if not extracted:
                     # Set empty placeholder to prevent downstream errors
                     globals_schema[write_key] = []
-                    print(f"⚠️  Could not extract {write_key}")
-                    logger.info(f"⚠️  Could not extract {write_key}")
+                    print(f"⚠️  Could not extract {write_key} from writes")
+                    logger.info(f"⚠️  Could not extract {write_key} from writes")
                     #logger_json_block(logger, f"🔄 Marked done: Could not extract {write_key}, set empty placeholder for {write_key} in globals_schema:", globals_schema)
+        
+        # Look for code outputs and update global schema
+        #if execution_result and execution_result.get("status") == "success":
+        #    result_data = execution_result.get("result", {})
+        #    # Iterate through all execution result data and store in globals_schema
+        #    for key, value in result_data.items():
+        #        # Skip if this key is already handled by the writes list
+        #        if key not in writes and key not in globals_schema:
+        #            globals_schema[key] = value
+        #            print(f"✅ Stored temporary code output: {key}")
+        #            logger.info(f"✅ Stored temporary code output: {key}")
+        
+
         
         # Store results
         node_data['status'] = 'completed'
@@ -454,13 +467,13 @@ class ExecutionContextManager:
                         logger.info(f"✅ Extracted {write_key} from execution result")
                         logger_json_block(logger, f"🔄 Updating globals_schema: Updated globals_schema with {write_key} from execution result, globals_schema:", globals_schema)
                         extracted = True
-                    elif len(result_data) == 1 and len(writes) == 1:
-                        key, value = next(iter(result_data.items()))
-                        globals_schema[write_key] = value
-                        print(f"✅ Extracted {write_key} from key {key} in execution result")
-                        logger.info(f"✅ Extracted {write_key} from key {key} in execution result")
-                        logger_json_block(logger, f"🔄 Updating globals_schema: Updated globals_schema with {write_key} from key {key} in execution result, globals_schema:", globals_schema)
-                        extracted = True
+                    #elif len(result_data) == 1 and len(writes) == 1:
+                    #    key, value = next(iter(result_data.items()))
+                    #    globals_schema[write_key] = value
+                    #    print(f"✅ Extracted {write_key} from key {key} in execution result")
+                    #    logger.info(f"✅ Extracted {write_key} from key {key} in execution result")
+                    #    logger_json_block(logger, f"🔄 Updating globals_schema: Updated globals_schema with {write_key} from key {key} in execution result, globals_schema:", globals_schema)
+                    #    extracted = True
                 
                 # Strategy 2: Extract from direct agent output (ThinkerAgent, DistillerAgent, FormatterAgent)
                 if not extracted and output and isinstance(output, dict):
@@ -479,6 +492,17 @@ class ExecutionContextManager:
                     print(f"⚠️  Could not extract {write_key}")
                     logger.info(f"⚠️  Could not extract {write_key}")
                     #logger_json_block(logger, f"🔄 Marked done: Could not extract {write_key}, set empty placeholder for {write_key} in globals_schema:", globals_schema)
+        
+        # Look for code outputs and update global schema
+        if execution_result and execution_result.get("status") == "success":
+            result_data = execution_result.get("result", {})
+            # Iterate through all execution result data and store in globals_schema
+            for key, value in result_data.items():
+                # Skip if this key is already handled by the writes list
+                if key not in writes and key not in globals_schema:
+                    globals_schema[key] = value
+                    print(f"✅ Stored temporary code output: {key}")
+                    logger.info(f"✅ Stored temporary code output: {key}")
         
         #print(f"✅ {step_id} completed successfully")
         logger_step(logger, f"✅ {step_id} updated globals_schema")

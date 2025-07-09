@@ -4,73 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Countdown Timer</title>
-    <style>
-
-body {
-    font-family: sans-serif;
-    background-color: #121212;
-    color: #ffffff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-}
-
-.countdown-timer {
-    text-align: center;
-}
-
-.timer {
-    font-size: 2em;
-    font-weight: bold;
-    color: #bb86fc;
-    padding: 20px;
-    border: 2px solid #bb86fc;
-    border-radius: 10px;
-    display: inline-block;
-}
-
-#message {
-    margin-top: 20px;
-    font-size: 1.2em;
-    color: #ffffff;
-}
-
-
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="countdown-timer">
-        <div class="timer" id="countdown"></div>
-        <div id="message"></div>
+    <div class="container">
+        <h1>Countdown Timer</h1>
+        <div id="countdown">
+            <div class="time">
+                <span id="minutes">00</span>
+                <span>Minutes</span>
+            </div>
+            <div class="time">
+                <span id="seconds">00</span>
+                <span>Seconds</span>
+            </div>
+        </div>
     </div>
-    <script>
-
-// Set the initial time in minutes
-let initialMinutes = 2;
-let time = initialMinutes * 60;
-
-const countdownEl = document.getElementById('countdown');
-
-setInterval(updateCountdown, 1000);
-
-function updateCountdown() {
-    const minutes = Math.floor(time / 60);
-    let seconds = time % 60;
-
-    seconds = seconds < 10 ? '0' + seconds : seconds;
-
-    countdownEl.innerHTML = `${minutes}:${seconds}`;
-    time--;
-
-    if (time < 0) {
-        clearInterval(); // Stop the interval when time reaches 0
-        countdownEl.innerHTML = 'Time Expired';
-    }
-}
-
-
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

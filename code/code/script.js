@@ -1,24 +1,24 @@
 
-// Set the initial time in minutes
-let initialMinutes = 2;
-let time = initialMinutes * 60;
-
-const countdownEl = document.getElementById('countdown');
-
-setInterval(updateCountdown, 1000);
+const minutesEl = document.getElementById('minutes');
+const secondsEl = document.getElementById('seconds');
+let totalSeconds = 300; // 5 minutes
 
 function updateCountdown() {
-    const minutes = Math.floor(time / 60);
-    let seconds = time % 60;
+    let minutes = Math.floor(totalSeconds / 60);
+    let seconds = totalSeconds % 60;
 
+    minutes = minutes < 10 ? '0' + minutes : minutes;
     seconds = seconds < 10 ? '0' + seconds : seconds;
 
-    countdownEl.innerHTML = `${minutes}:${seconds}`;
-    time--;
+    minutesEl.innerText = minutes;
+    secondsEl.innerText = seconds;
 
-    if (time < 0) {
-        clearInterval(); // Stop the interval when time reaches 0
-        countdownEl.innerHTML = 'Time Expired';
+    totalSeconds--;
+
+    if (totalSeconds < 0) {
+        totalSeconds = 0;
     }
 }
 
+updateCountdown();
+setInterval(updateCountdown, 1000);

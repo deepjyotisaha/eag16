@@ -288,7 +288,7 @@ class AgentLoop4:
         else:
             return result
         
-    async def _execute_step_self(self, step_id, context, max_iterations=5):
+    async def _execute_step_self(self, step_id, context, max_iterations=10):
         """Execute a single step with call_self support"""
 
         step_data = context.get_step_data(step_id)

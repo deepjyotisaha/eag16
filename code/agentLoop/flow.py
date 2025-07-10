@@ -158,7 +158,7 @@ class AgentLoop4:
             #logger.info(f"🔄 Executing agents for real")
             logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps}")
             #tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
-            tasks = [self._execute_step_self(step_id, context) for step_id in ready_steps]
+            tasks = [self._execute_step_self(step_id, context, visualizer) for step_id in ready_steps]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps} - Completed")
             logger_json_block(logger, f"🔄 Results of executing agents steps which are ready for execution: {ready_steps}", results)
@@ -288,7 +288,7 @@ class AgentLoop4:
         else:
             return result
         
-    async def _execute_step_self(self, step_id, context, max_iterations=10):
+    async def _execute_step_self(self, step_id, context, visualizer=None, max_iterations=10):
         """Execute a single step with call_self support"""
 
         step_data = context.get_step_data(step_id)
@@ -377,6 +377,10 @@ class AgentLoop4:
             # 🔧 CHANGE: Add iteration counter and max_iterations check
             iteration_count = 1
             while agent_output.get("call_self") and iteration_count < max_iterations:
+                # 🔧 MINIMAL ADDITION: Log iteration start
+                if visualizer:
+                    visualizer.log_iteration(step_id, iteration_count + 1, max_iterations, agent_type, "started")
+                
                 logger_step(logger, f"🔄 Call self detected for step: {step_id} (iteration {iteration_count + 1}/{max_iterations})")
 
                 inputs = {**inputs, **agent_output.get("writes", {})}
@@ -399,6 +403,10 @@ class AgentLoop4:
                 logger_json_block(logger, f"Agent Output for step {step_id} - iteration {iteration_count + 1}/{max_iterations}", second_result)
 
                 if second_result["success"]:
+                    # 🔧 MINIMAL ADDITION: Log iteration completion
+                    if visualizer:
+                        visualizer.log_iteration(step_id, iteration_count + 1, max_iterations, agent_type, "completed")
+                    
                     output = second_result["output"]
 
                     if context._has_executable_code(output):
@@ -427,6 +435,10 @@ class AgentLoop4:
                     agent_output = output.get("output", {})
                     iteration_count += 1
                 else:
+                    # 🔧 MINIMAL ADDITION: Log iteration failure
+                    if visualizer:
+                        visualizer.log_iteration(step_id, iteration_count + 1, max_iterations, agent_type, "failed")
+                    
                     iterations_data.append(None)
                     break  # Exit loop on failure
 
@@ -434,6 +446,10 @@ class AgentLoop4:
             if iteration_count >= max_iterations and agent_output.get("call_self"):
                 logger_step(logger, f"⚠️ Max iterations ({max_iterations}) reached for step {step_id}")
                 step_data['max_iterations_reached'] = True
+
+            # 🔧 MINIMAL ADDITION: Update node with iteration count
+            if visualizer:
+                visualizer.update_node_iterations(step_id, len(iterations_data))
 
             # Store iterations in the node data for session persistence
             step_data = context.get_step_data(step_id)

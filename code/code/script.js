@@ -1,34 +1,26 @@
 
-const minutesSpan = document.getElementById('minutes');
-const secondsSpan = document.getElementById('seconds');
-let minutes = parseInt(minutesSpan.textContent);
-let seconds = parseInt(secondsSpan.textContent);
+// Set the date we're counting down to
+var countDownDate = new Date().getTime() + (5 * 60 * 1000); // 5 minutes from now
 
-function updateTimer() {
-    seconds--;
-    if (seconds < 0) {
-        minutes--;
-        seconds = 59;
-        if (minutes < 0) {
-            minutes = 0;
-            seconds = 0;
-            clearInterval(interval);
-            alert('Countdown finished!');
-        }
-    }
+// Update the countdown every 1 second
+var x = setInterval(function() {
 
-    minutesSpan.textContent = minutes.toString();
-    secondsSpan.textContent = seconds < 10 ? '0' + seconds.toString() : seconds.toString();
-}
+  // Get today's date and time
+  var now = new Date().getTime();
 
-const interval = setInterval(updateTimer, 1000);
+  // Find the distance between now and the countdown date
+  var distance = countDownDate - now;
 
-// Dark mode toggle
-const darkModeToggle = document.createElement('button');
-darkModeToggle.classList.add('dark-mode-toggle');
-darkModeToggle.textContent = 'Toggle Dark Mode';
-document.body.appendChild(darkModeToggle);
+  // Time calculations for minutes and seconds
+  var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+  var seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-darkModeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-});
+  // Display the result in the element with id="countdown"
+  document.getElementById("countdown").innerHTML = minutes + ":" + seconds;
+
+  // If the countdown is finished, write some text
+  if (distance < 0) {
+    clearInterval(x);
+    document.getElementById("countdown").innerHTML = "EXPIRED";
+  }
+}, 1000);

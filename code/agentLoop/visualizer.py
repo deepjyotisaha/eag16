@@ -83,7 +83,13 @@ class ExecutionVisualizer:
                 label = Text(f"ROOT {status_symbol} {description}")
             else:
                 short_desc = description[:60] + "..." if len(description) > 60 else description
-                label = Text(f"{current_node} {status_symbol} {agent} → {short_desc}")
+                
+                # 🔧 ADD: Show iteration count in the label
+                iterations_count = node_data.get('iterations_count', 1)
+                if iterations_count > 1:
+                    label = Text(f"{current_node} {status_symbol} {agent} → {short_desc} ({iterations_count} iterations)")
+                else:
+                    label = Text(f"{current_node} {status_symbol} {agent} → {short_desc}")
             
             # Styling
             if status == "completed":
@@ -188,3 +194,19 @@ class ExecutionVisualizer:
             self.G.nodes[n]["status"] in ["completed", "failed"] 
             for n in self.G.nodes if n != "ROOT"
         )
+
+    def log_iteration(self, node_id, iteration_num, max_iterations, agent_type, status="started"):
+        """Log iteration information to the execution log"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        if status == "started":
+            self.log_messages.append(f"[{timestamp}] 🔄 Iteration {iteration_num}/{max_iterations} for {node_id} ({agent_type}) started")
+        elif status == "completed":
+            self.log_messages.append(f"[{timestamp}] ✅ Iteration {iteration_num}/{max_iterations} for {node_id} ({agent_type}) completed")
+        elif status == "failed":
+            self.log_messages.append(f"[{timestamp}] ❌ Iteration {iteration_num}/{max_iterations} for {node_id} ({agent_type}) failed")
+
+    def update_node_iterations(self, node_id, iterations_count):
+        """Update the node with iteration count information"""
+        if node_id in self.G.nodes:
+            self.G.nodes[node_id]['iterations_count'] = iterations_count
+            self.G.nodes[node_id]['call_self_used'] = iterations_count > 1

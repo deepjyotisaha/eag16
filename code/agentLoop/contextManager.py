@@ -639,7 +639,7 @@ class ExecutionContextManager:
         session_id = self.plan_graph.graph['session_id']
         session_file = date_dir / f"session_{session_id}.json"
         
-        graph_data = nx.node_link_data(self.plan_graph)
+        graph_data = nx.node_link_data(self.plan_graph, edges="links")
         
         with open(session_file, 'w', encoding='utf-8') as f:
             json.dump(graph_data, f, indent=2, default=str, ensure_ascii=False)

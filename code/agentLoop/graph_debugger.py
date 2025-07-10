@@ -411,7 +411,7 @@ class GraphDebugger:
         debug_file = Path(output_path)
         debug_file.parent.mkdir(parents=True, exist_ok=True)
         
-        graph_data = nx.node_link_data(self.context.plan_graph)
+        graph_data = nx.node_link_data(self.context.plan_graph, edges="links")
         with open(debug_file, 'w', encoding='utf-8') as f:
             json.dump(graph_data, f, indent=2, default=str, ensure_ascii=False)
             

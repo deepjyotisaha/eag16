@@ -1,29 +1,19 @@
-
 body {
+    background-color: #222;
+    color: #fff;
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: #222;
-    color: #fff;
+    margin: 0;
 }
 
-.timer {
+.container {
+    text-align: center;
+}
+
+#countdown {
     font-size: 5em;
-}
-
-/* Dark theme */
-body.dark-mode {
-    background-color: #eee;
-    color: #222;
-}
-
-/* Dark mode toggle */
-.dark-mode-toggle {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    cursor: pointer;
-    font-size: 1em;
+    font-weight: bold;
 }

@@ -366,13 +366,13 @@ class AgentLoop4:
                     {"iteration": 1, "output": output}
             ]
 
-            logger_json_block(logger, f"🔄 Output data for step {step_id}", output)
+            #logger_json_block(logger, f"🔄 Output data for step {step_id}", output)
 
             agent_output = output.get("output", {})
 
-            logger_json_block(logger, f"🔄 Agent output for step {step_id}", agent_output)
+            #logger_json_block(logger, f"🔄 Agent output for step {step_id}", agent_output)
 
-            logger_step(logger, f"🔄 Agent output for step {step_id} - call_self: {agent_output.get('call_self')}")
+            logger_step(logger, f"🔄 Agent {agent_type} for step {step_id} - call_self: {agent_output.get('call_self')}")
 
             # 🔧 CHANGE: Add iteration counter and max_iterations check
             iteration_count = 1
@@ -412,7 +412,7 @@ class AgentLoop4:
             
                             output = context._merge_execution_results(second_result, execution_result)
                             logger.info(f"✅ Merged execution result with output for step {step_id} - iteration {iteration_count + 1}/{max_iterations}")
-                            #logger_json_block(logger, f"✅ Merged execution result with output for step {step_id}, output:", output)
+                            logger_json_block(logger, f"✅ Merged execution result with output for step {step_id}, output:", output)
                             await context.update_globals_schema(step_id, output.get("output", {}))
 
                         else:

@@ -30,7 +30,8 @@ Your job is to generate **code** — either:
 - Single tool call can complete the entire task
 - Task is simple and atomic
 - No sequential dependencies needed
-- Always write the output or result to variables in `writes` like `code_step_T001`
+- If this should be the last step of a multi-step process (which has previous outputs) - after this step, the oringinal prompt for the step will be accomplished
+- Always write the output or result to variables in `writes` like `code_step_T001` since this is the final outcome of the step.
 
 ### **Step 2: Generate code_variants (MANDATORY if tools available)**
 
@@ -44,13 +45,16 @@ Your job is to generate **code** — either:
 - Returning empty results when tools can provide data
 - Deferring work that current tools can accomplish
 - Writing HTML, JS or CSS code to a file without assigning to a variable first
+- Writing multiple files in a single step, always perfer multi-step for tasks with multiple files (HTML, JS, CSS etc.)
+- NEVER use variables like globals, previous_output, locals etc. or any other variations to access file content from previous steps. Refer to examples below on how to access file content from previous steps
 - You dont need to host the web application
 
 ✅ **REQUIRED:**
 - Always generate `code_variants` when tools are available
 - Use tools immediately to gather data
 - Only defer to next iteration what truly requires previous results
-- Always use ONLY the variable in the "results" from previous steps 
+- Always use ONLY the variable in the "results" from previous steps, example: `layout_html_3A`
+- Always refernce file content from previous steps using format `layout_html_3A["content"]`
 - Always write HTML, CSS and JS files using python code
 - In the FINAL STEP ALWAYS write to the output fields under `writes`
 
@@ -98,7 +102,7 @@ Your job is to generate **code** — either:
 ## ✅ FILE HANDLING INSTRUCTIONS
 THE FILE HANDLING INSTRUCTIONS ARE VALID FOR THE FOLLOWING TYPE OF FILES: HTML, CSS OR JS
 
-- Full file content (if any) will be present in `the following format:
+- Full file content (if any) will be available in the following format, refer this to access files, file content or data from previous steps:
 ```json
 "layout_html_3A": {
   "path": "layout.html",
@@ -109,6 +113,9 @@ THE FILE HANDLING INSTRUCTIONS ARE VALID FOR THE FOLLOWING TYPE OF FILES: HTML, 
 ```
 
 - Use Python to write HTML, CSS or JS files:
+
+SAMPLE FOR HTML, JAVASCRIPT or CSS Files
+
 ```python
 html = """<html><body>Hello</body></html>"""
 with open("code/layout.html", "w") as f:
@@ -121,8 +128,6 @@ return { "layout_html_3A": {
         }
 }
 ```
-
-SAMPLE FOR JAVASCRIPT (JS)
 
 ```python
 js_code = """// Assume you have an HTML element like this in your HTML file:
@@ -145,11 +150,7 @@ return { "layout_js_3A": {
 }
 ```
 
-
-
-NOTICE: How the HTML, JS or CSS content is first stored in a variable "html" and then written into file using f.write()
-
-- To **modify** HTML, CSS or JS files:
+-✅ To **modify** HTML, CSS or JS files:
 ```python
 if layout_html_3A:
     html = layout_html_3A["content"]
@@ -165,7 +166,7 @@ if layout_html_3A:
         }
 ```
 
-- To **insert content at marker** for HTML, CSS or JS files:
+- ✅ To **insert content at marker** for HTML, CSS or JS files:
 ```python
 if layout_html_3A:
     html = layout_html_3A["content"]
@@ -183,7 +184,9 @@ if layout_html_3A:
         }
 ```
 
-🚨 IMPORTANT: Notice how the content is accessed from `layout_html_3A` using `layout_html_3A["content"]`
+🚨 IMPORTANT: 
+  1. Notice how the content is accessed from `layout_html_3A` using `layout_html_3A["content"]`. Make a note that variables like "globals" OR "previous_output" are not used to access data from previous steps. ALWAYS use the form `layout_html_3A["content"]`
+  2. How the HTML, JS or CSS content is first stored in a variable "html" and then written into file using f.write()
 
 
 ---

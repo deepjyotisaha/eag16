@@ -223,21 +223,17 @@ class ExecutionContextManager:
         
         enhanced_output = original_output.copy()
         agent_output = enhanced_output.get("output", {})
-        logger_json_block(logger, f"🔄 Inside Merge: Copied Enhanced output", enhanced_output)
-        logger_json_block(logger, f"🔄 Inside Merge: Copied Agent output", agent_output)
 
-        #enhanced_output["execution_result"] = execution_result.get("code_results")
-        #enhanced_output["execution_status"] = execution_result.get("status")
-        #enhanced_output["execution_error"] = execution_result.get("error") 
-        #enhanced_output["execution_time"] = execution_result.get("total_time")
-        #enhanced_output["executed_variant"] = execution_result.get("executed_variant")
+        #logger_json_block(logger, f"🔄 Inside Merge: Copied Enhanced output", enhanced_output)
+        #logger_json_block(logger, f"🔄 Inside Merge: Copied Agent output", agent_output)
+
 
         agent_output["execution_result"] = execution_result.get("code_results")
         agent_output["execution_status"] = execution_result.get("status")
         agent_output["execution_error"] = execution_result.get("error") 
         agent_output["execution_time"] = execution_result.get("total_time")
         agent_output["executed_variant"] = execution_result.get("executed_variant")
-        logger_json_block(logger, f"🔄 Inside Merge: Partial Agent output", agent_output)
+        #logger_json_block(logger, f"🔄 Inside Merge: Partial Agent output", agent_output)
         
         # Merge execution results directly
         #if agent_output.get("status") == "success":
@@ -448,8 +444,8 @@ class ExecutionContextManager:
         globals_schema = self.plan_graph.graph['globals_schema']
         execution_result = output.get("execution_result", {})
 
-        logger_json_block(logger, f"🔄 Updating globals_schema: Output", output)
-        logger_json_block(logger, f"🔄 Updating globals_schema: Execution Result", execution_result)
+        #logger_json_block(logger, f"🔄 Updating globals_schema: Output", output)
+        #logger_json_block(logger, f"🔄 Updating globals_schema: Execution Result", execution_result)
         
         if writes:
             for write_key in writes:
@@ -465,7 +461,7 @@ class ExecutionContextManager:
                         globals_schema[write_key] = result_data[write_key]
                         print(f"✅ Extracted {write_key} from execution result")
                         logger.info(f"✅ Extracted {write_key} from execution result")
-                        logger_json_block(logger, f"🔄 Updating globals_schema: Updated globals_schema with {write_key} from execution result, globals_schema:", globals_schema)
+                        #logger_json_block(logger, f"🔄 Updating globals_schema: Updated globals_schema with {write_key} from execution result, globals_schema:", globals_schema)
                         extracted = True
                     #elif len(result_data) == 1 and len(writes) == 1:
                     #    key, value = next(iter(result_data.items()))
@@ -482,7 +478,7 @@ class ExecutionContextManager:
                         globals_schema[write_key] = output[write_key]
                         print(f"✅ Extracted {write_key} from direct output")
                         logger.info(f"✅ Extracted {write_key} from direct output")
-                        logger_json_block(logger, f"🔄 Updating globals_schema: Updated globals_schema with {write_key} from direct output, globals_schema:", globals_schema)
+                        #logger_json_block(logger, f"🔄 Updating globals_schema: Updated globals_schema with {write_key} from direct output, globals_schema:", globals_schema)
                         extracted = True
                 
                 # Strategy 3: Emergency fallback - try to find any matching data
@@ -507,7 +503,7 @@ class ExecutionContextManager:
         #print(f"✅ {step_id} completed successfully")
         logger_step(logger, f"✅ {step_id} updated globals_schema")
         #logger_json_block(logger, f"🔄 Marked done for step {step_id} - Node data", node_data)
-        #logger_json_block(logger, f"🔄 Marked done for step {step_id} - Globals schema", globals_schema)
+        logger_json_block(logger, f"🔄 Marked done for step {step_id} - Globals schema", globals_schema)
 
         self._auto_save()    
 

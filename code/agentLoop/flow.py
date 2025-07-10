@@ -158,7 +158,7 @@ class AgentLoop4:
             #logger.info(f"🔄 Executing agents for real")
             logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps}")
             #tasks = [self._execute_step(step_id, context) for step_id in ready_steps]
-            tasks = [self._execute_step_self(step_id, context, visualizer) for step_id in ready_steps]
+            tasks = [self._execute_step_self(step_id, context, visualizer, console) for step_id in ready_steps]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             logger_step(logger, f"🔄 Executing agents steps which are ready for execution: {ready_steps} - Completed")
             logger_json_block(logger, f"🔄 Results of executing agents steps which are ready for execution: {ready_steps}", results)
@@ -288,7 +288,7 @@ class AgentLoop4:
         else:
             return result
         
-    async def _execute_step_self(self, step_id, context, visualizer=None, max_iterations=10):
+    async def _execute_step_self(self, step_id, context, visualizer=None, console=None, max_iterations=10):
         """Execute a single step with call_self support"""
 
         step_data = context.get_step_data(step_id)
@@ -380,6 +380,9 @@ class AgentLoop4:
                 # 🔧 MINIMAL ADDITION: Log iteration start
                 if visualizer:
                     visualizer.log_iteration(step_id, iteration_count + 1, max_iterations, agent_type, "started")
+                    visualizer.update_node_iterations(step_id, iteration_count + 1)
+            
+                console.print(visualizer.get_layout())
                 
                 logger_step(logger, f"🔄 Call self detected for step: {step_id} (iteration {iteration_count + 1}/{max_iterations})")
 
@@ -448,8 +451,8 @@ class AgentLoop4:
                 step_data['max_iterations_reached'] = True
 
             # 🔧 MINIMAL ADDITION: Update node with iteration count
-            if visualizer:
-                visualizer.update_node_iterations(step_id, len(iterations_data))
+            #if visualizer:
+            #    visualizer.update_node_iterations(step_id, len(iterations_data))
 
             # Store iterations in the node data for session persistence
             step_data = context.get_step_data(step_id)

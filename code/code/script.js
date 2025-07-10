@@ -1,26 +1,20 @@
 
-// Set the date we're counting down to
-var countDownDate = new Date().getTime() + (5 * 60 * 1000); // 5 minutes from now
+function countdown() {
+    var now = new Date().getTime();
+    var targetDate = new Date('2024-12-31T23:59:59').getTime();
+    var timeLeft = targetDate - now;
 
-// Update the countdown every 1 second
-var x = setInterval(function() {
+    var days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+    var hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    var minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    var seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
-  // Get today's date and time
-  var now = new Date().getTime();
+    document.getElementById('timer').innerHTML = days + 'd ' + hours + 'h '
+    + minutes + 'm ' + seconds + 's ';
 
-  // Find the distance between now and the countdown date
-  var distance = countDownDate - now;
+    if (timeLeft < 0) {
+        document.getElementById('timer').innerHTML = 'EXPIRED';
+    }
+}
 
-  // Time calculations for minutes and seconds
-  var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-  var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-  // Display the result in the element with id="countdown"
-  document.getElementById("countdown").innerHTML = minutes + ":" + seconds;
-
-  // If the countdown is finished, write some text
-  if (distance < 0) {
-    clearInterval(x);
-    document.getElementById("countdown").innerHTML = "EXPIRED";
-  }
-}, 1000);
+setInterval(countdown, 1000);

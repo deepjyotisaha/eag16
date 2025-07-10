@@ -1,19 +1,6 @@
-body {
-    background-color: #222;
-    color: #fff;
-    font-family: sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-}
 
-.container {
+#timer {
+    font-size: 3em;
     text-align: center;
-}
-
-#countdown {
-    font-size: 5em;
-    font-weight: bold;
+    margin-top: 50px;
 }

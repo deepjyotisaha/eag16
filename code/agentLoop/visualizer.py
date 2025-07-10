@@ -54,6 +54,8 @@ class ExecutionVisualizer:
 
     def get_log_panel(self):
         log_text = "\n".join(self.log_messages[-8:]) or "🚀 Starting execution..."
+        #print(f"🔄 Execution Log: {log_text}")
+        #print(f"🔄 Execution Log length: {len(self.log_messages)}")
         return Panel(Align.left(log_text), title="📋 Execution Log", border_style="cyan")
 
     def build_tree(self, node_id="ROOT", visited_global=None):
@@ -148,7 +150,7 @@ class ExecutionVisualizer:
         layout = Layout()
         layout.split_column(
             Layout(name="tree", ratio=3),
-            Layout(name="log", size=8)
+            Layout(name="log", size=20)
         )
         layout["tree"].update(
             Panel(self.build_tree(), title="🤖 Agent Execution DAG", border_style="white")

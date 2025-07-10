@@ -53,8 +53,8 @@ Your job is to generate **code** — either:
 - Always generate `code_variants` when tools are available
 - Use tools immediately to gather data
 - Only defer to next iteration what truly requires previous results
-- Always use ONLY the variable in the "results" from previous steps, example: `layout_html_3A`
-- Always refernce file content from previous steps using format `layout_html_3A["content"]`
+- Always use ONLY the variable in the "results" from previous steps, example: `layout_html_XA`
+- Always refernce file content from previous steps using example: `layout_html_XA["content"]`
 - Always write HTML, CSS and JS files using python code
 - In the FINAL STEP ALWAYS write to the output fields under `writes`
 

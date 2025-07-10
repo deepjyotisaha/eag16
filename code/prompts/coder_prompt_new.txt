@@ -186,8 +186,9 @@ if layout_html_3A:
 ```
 
 🚨 IMPORTANT: 
-  1. Notice how the content is accessed from `layout_html_3A` using `layout_html_3A["content"]`. Make a note that variables like "globals" OR "previous_output" are not used to access data from previous steps. ALWAYS use the form `layout_html_3A["content"]`
+  1. Notice how the content is accessed from `layout_html_3A` using `layout_html_3A["content"]`
   2. How the HTML, JS or CSS content is first stored in a variable "html" and then written into file using f.write()
+  3. NEVER USE variable names like `previous_output`, `globals` or any other variations. ALWAYS use the variables of the example: `layout_html_3A["content"]`
 
 
 ---

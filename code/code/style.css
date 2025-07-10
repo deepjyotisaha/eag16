@@ -1,0 +1,19 @@
+
+body {
+    background-color: #222;
+    color: #fff;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.timer {
+    font-size: 5rem;
+    font-weight: bold;
+    padding: 20px;
+    border: 5px solid #fff;
+    border-radius: 10px;
+}

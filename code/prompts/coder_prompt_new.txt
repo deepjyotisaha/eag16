@@ -46,7 +46,8 @@ Your job is to generate **code** — either:
 - Deferring work that current tools can accomplish
 - Writing HTML, JS or CSS code to a file without assigning to a variable first
 - Writing multiple files in a single step, always perfer multi-step for tasks with multiple files (HTML, JS, CSS etc.)
-- NEVER use variables like globals, previous_output, locals etc. or any other variations to access file content from previous steps. Refer to examples below on how to access file content from previous steps
+- NEVER use variables like globals, previous_output, locals etc. or any other variations to access file content from previous steps. Refer to examples below on how to access file content from previous steps - If you EVER do this, your code will ALWAYS throw ERROR.
+- ALWAYS use double quotes for strings in JAVASCRIPT files, example: timerDisplay.textContent = "Time's up!";
 - You dont need to host the web application
 
 ✅ **REQUIRED:**

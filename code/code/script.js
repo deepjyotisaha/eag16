@@ -1,25 +1,23 @@
+/* script.js */
 
-const timerDisplay = document.getElementById('timer');
-const messageDisplay = document.getElementById('message');
-let timeLeft = 300; // 5 minutes in seconds
+// Smooth scrolling effect
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
 
-function updateTimer() {
-    let minutes = Math.floor(timeLeft / 60);
-    let seconds = timeLeft % 60;
+        document.querySelector(this.getAttribute('href')).scrollIntoView({
+            behavior: 'smooth'
+        });
+    });
+});
 
-    minutes = minutes < 10 ? '0' + minutes : minutes;
-    seconds = seconds < 10 ? '0' + seconds : seconds;
-
-    timerDisplay.textContent = minutes + ':' + seconds + ':000';
-
-    if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        messageDisplay.textContent = "Time's up!";
-        timerDisplay.textContent = "00:00:000";
-    } else {
-        timeLeft--;
-    }
+// Basic image gallery functionality (example)
+const images = document.querySelectorAll('.gallery img');
+if (images.length > 0) {
+    images.forEach(img => {
+        img.addEventListener('click', function () {
+            // Add your image gallery logic here (e.g., modal popup)
+            alert('Image clicked!'); // Placeholder
+        });
+    });
 }
-
-const timerInterval = setInterval(updateTimer, 1000);
-

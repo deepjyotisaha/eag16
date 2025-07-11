@@ -185,6 +185,7 @@ Simulate layered planning like a real team:
   - All generated code — whether single-file or multi-file — is internally stored and managed as `code_step_T<step_id>`.  
   - Execution outputs (e.g., stdout, return values, file artifacts) are **automatically saved** as `execution_result_T<step_id>`.  
   - You do **not need to specify or manage filenames** — CoderAgent handles the full generation-execution lifecycle.
+  - Generate webpage in HTML, CSS and JS from final formatted report for end user to view
   - Note: If the user has specifically mentioned then handle one task at a time, use seperate steps
 * **FormatterAgent**: Beautifies final outputs into human-readable formats such as Markdown, HTML, tables, or annotated text.  
   - You must ensure that you  **pass as much upstream content as possible** into the Formatter step (e.g., summaries, refined itineraries, structured costs, recommendations, travel notes, highlights).  

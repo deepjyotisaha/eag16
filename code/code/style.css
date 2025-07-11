@@ -1,27 +1,39 @@
+/* style.css */
 
 body {
-    background-color: #333; /* Dark background */
-    color: #fff; /* Light text color */
-    font-family: sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    font-family: Arial, sans-serif;
     margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
 }
 
-.container {
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 1em 0;
     text-align: center;
 }
 
-#timer {
-    font-size: 3em;
-    margin-bottom: 20px;
+section {
+    padding: 20px;
+    margin: 20px;
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
 }
 
-#message {
-    font-size: 1.5em;
-    color: lightgreen;
+section h2 {
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5em;
 }
 
-/* Add more dark theme styling as needed */
+footer {
+    text-align: center;
+    padding: 1em 0;
+    background-color: #333;
+    color: #fff;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}

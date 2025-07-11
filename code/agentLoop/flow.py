@@ -430,6 +430,7 @@ class AgentLoop4:
 
                         else:
                             logger.info(f"❌ Execution failed for step {step_id} - iteration {iteration_count + 1}/{max_iterations}: {execution_result}")
+                            
                     else:
                         logger_step(logger, f"🔄 No code execution for step: {step_id} - iteration {iteration_count + 1}/{max_iterations}, assigning result to output")
                         output = second_result        

@@ -66,8 +66,8 @@ You retrieve **as-is**, from sources including:
 {
   "result_variable_T001": [],  // Empty initially, will be populated by code execution
   "call_self": true,
-  "audit_report": "Clear audit report and explaination that your output & code follows all the instructions specified, and you are not violating any rules"
-  "next_instruction": "Clear instruction for next iteration",
+  "audit_report": "Variable names = As per instructions, access_files = as per instructions"
+  "audit_report": "Clear audit report and explaination that your output, variable names & code follows all the instructions specified, and you are not violating any rules, the code will not throw error"
   "iteration_context": {
     "current_step": "search_phase",
     "next_step": "extraction_phase",
@@ -85,7 +85,7 @@ You retrieve **as-is**, from sources including:
 {
   "result_variable_T001": [],  // Will be populated by code execution
   "call_self": false,
-  "audit_report": "Clear audit report and explaination that your output & code follows all the instructions specified, and you are not violating any rules"
+  "audit_report": "Clear audit report and explaination that your output, variable names & code follows all the instructions specified, and you are not violating any rules, the code will not throw error"
   "code_variants": {
     "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'result_variable_T001': content}",
     "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'result_variable_T001': text}"
@@ -195,17 +195,15 @@ You retrieve **as-is**, from sources including:
 }
 ```
 
-## 🚨 IMPORTANT: 
-
 **🚨 CRITICAL:** Notice how `fusion_startups_T010` from "writes" field appears in:
 1. JSON key (exact match)
 2. Return statement (exact same name)
 3. Both code variants use the SAME variable name
-4. Accessing data from previous steps - exact variable name`flight_urls_1A[:5]`
+4. Accessing data from previous iterations, use exact variable name like `flight_urls_1A[:5]`
 
 ---
 
-## 🚨 ACCESSING DATA FROM PREVIOUS STEP
+## 🚨 ACCESSING DATA from previous iterations
 
 **INPUT RECEIVED:**
 ```json
@@ -214,14 +212,14 @@ You retrieve **as-is**, from sources including:
     "execution_result": {
         "status": "success",
         "result": {
-             "xuv_3xo_urls_1A": [ .... ] // This is the variable name
+             "xuv_3xo_urls_1A": [ .... ] // This is the variable name which has the data
         }
     }
   }
 }
 ```
 
-** ✅ CORRECT OUTPUT - Use the variable name 
+** ✅ CORRECT OUTPUT
 ```json
 {
   "xuv_3xo_details_T001": [],
@@ -233,7 +231,7 @@ You retrieve **as-is**, from sources including:
 }
 ```
 
-** ❌ WRONG - NEVER use previous_output, globals, locals etc. or any other variations
+** ❌ WRONG OUTPUT
 ```json
 {
   "xuv_3xo_details_T001": [],
@@ -245,7 +243,7 @@ You retrieve **as-is**, from sources including:
 }
 ```
 
-
+## 🚨 IMPORTANT: Use the variable name xuv_3xo_urls_1A to access data, NEVER use variable names like previous_output, globals, locals etc. or any other variations
 
 ## ✅ OUTPUT VARIABLE NAMING
 
@@ -503,10 +501,6 @@ Use only the following tools (in positional form):
   }
 }
 ```
-
-## 🚨 IMPORTANT: 
-    1. The variables which have the data needed for next steps are inside the results section of previous_output
-    2. Always use ONLY these variable names in your code to refer to data obtained from previous steps
 
 **CORRECT OUTPUT (Second Call):**
 ```json

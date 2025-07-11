@@ -97,7 +97,7 @@ Your job is to generate **code** — either:
 {
   "code_step_T001": [],  // Will be populated by code execution
   "call_self": false,
-    "audit_report": "Clear audit report and explaination that your output, variable names & code follows all the instructions specified, and you are not violating any rules, the code will not throw error"
+  "audit_report": "Clear audit report and explaination that your output, variable names & code follows all the instructions specified, and you are not violating any rules, the code will not throw error"
   "code_variants": {
     "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'code_step_T001': content}",
     "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'code_step_T001': text}"
@@ -138,6 +138,8 @@ Full file content (if any) will be available in the one of the following formats
 ```
 
 ## ✅ ACCESS FILE CONTENT for HTML, CSS or JS files:
+
+🚨 IMPORTANT: File content must be available in "inputs", else you cannot use it
 
 # ✅ When file content is available in DICTIONARY
 ```python
@@ -194,9 +196,6 @@ return { "layout_js_3A": {
 ```
  
 
-
-
-
 -✅ To **MODIFY** OR **EDIT** HTML, CSS or JS files:
 ```python
 if layout_html_3A:
@@ -234,6 +233,7 @@ if layout_html_3A:
   1. File content is accessed from `layout_html_3A` using `layout_html_3A["content"]`
   2. HTML, JS or CSS content is first stored in a variable "html" and then written into file using f.write()
   3. NEVER USE variable names like `previous_output`, `globals` or any other variations. ALWAYS use the variables of the example: `layout_html_3A["content"]`
+  4. NEVER USE a file which is not available the in "inputs" 
 
 
 ---

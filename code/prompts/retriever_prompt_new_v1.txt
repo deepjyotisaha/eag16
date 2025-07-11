@@ -48,9 +48,6 @@ You retrieve **as-is**, from sources including:
 - Returning empty results when tools can provide data
 - Deferring work that current tools can accomplish
 - NEVER USE import json, directly use json.load...
-- NEVER NEVER NEVER NEVER use variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. Refer to examples below on how to access file content from previous steps - If you EVER do this, your code will ALWAYS throw ERROR.
-- NEVER USE import json, directly use json.load...
-- IT IS STRICTLY FORBIDDEN TO USE variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. YOU WILL FAIL IF YOU DO THIS - VERY VERY IMPORTANT
 
 ✅ **REQUIRED:**
 - Always generate `code_variants` when tools are available

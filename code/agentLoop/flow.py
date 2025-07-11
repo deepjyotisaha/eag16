@@ -388,9 +388,18 @@ class AgentLoop4:
                 
                 logger_step(logger, f"🔄 Call self detected for step: {step_id} (iteration {iteration_count + 1}/{max_iterations})")
 
-                inputs = {**inputs, **agent_output.get("writes", {})}
+                #inputs = {**inputs, **agent_output.get("writes", {})}
 
-                logger.info(f"🔄 Inputs for step {step_id} - iteration {iteration_count + 1}/{max_iterations}: {inputs}")
+                ip_var = agent_output.get("execution_result", {}).get("result", {})
+                logger_json_block(logger, f"🔄 Previous iteration data for step {step_id}", agent_output)
+                logger.info(f"🔄 Previous iteration data for step {step_id}: {agent_output.get('execution_result', {})}")
+                logger.info(f"🔄 Previous iteration data for step {step_id}: {agent_output.get('execution_result', {}).get('result', {})}")
+                #logger.info(f"🔄 Previous iteration data for step {step_id}: {agent_output.get('previous_output', {}).get('execution_result', {}).get('result', {})}")
+                logger.info(f"🔄 Previous iteration data for step {step_id}: {ip_var}")
+                if ip_var:
+                    inputs = {**inputs, **ip_var} # This is the data from previous iteration
+
+                logger_json_block(logger, f"🔄 Inputs for step {step_id} - iteration {iteration_count + 1}/{max_iterations}", inputs)
 
                 second_agent_input = build_agent_input(
                     inputs = inputs,

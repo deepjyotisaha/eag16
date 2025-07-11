@@ -210,7 +210,7 @@ class ExecutionContextManager:
         
         return {"status": "error", "error": "All code variants failed"}
     
-    def _merge_execution_results(self, original_output, execution_result):
+    def _merge_execution_results(self, original_output, execution_result, iteration_count=0):
         """Merge execution results into agent output"""
         
         logger.info(f"🔄 Merging execution results into agent output")

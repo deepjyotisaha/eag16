@@ -1,11 +1,20 @@
-body {font-family: Arial, sans-serif; margin: 20px;}
-.report {max-width: 800px; margin: 0 auto;}
-.executive-summary, .design-and-comfort, .digital-features, .safety, .powertrain, .audio, .pricing, .competitive-analysis, .market-insights, .all_globals_schema_data, .structured_data, .risk-factors, .hidden-signals, .timeline-breakdown, .strategic-recommendations, .source-citations, .final-highlights {margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;}
-h1, h2, h3 {color: #333;}
-ul {list-style-type: none; padding: 0;}
-li {margin-bottom: 5px;}
-table {width: 100%; border-collapse: collapse;}
-th, td {border: 1px solid #ddd; padding: 8px; text-align: left;}
-th {background-color: #f2f2f2;}
-a {color: #007bff; text-decoration: none;}
-a:hover {text-decoration: underline;}
+
+body {
+    background-color: #222;
+    color: #eee;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    text-align: center;
+}
+
+#timerDisplay {
+    font-size: 5em;
+    font-weight: bold;
+}

@@ -23,6 +23,7 @@ class AgentLoop4:
     async def run(self, query, file_manifest, globals_schema, uploaded_files):
         # Phase 1: File Profiling (if files exist)
         file_profiles = {}
+        logger_json_block(logger, "Phase 1: File Profiling - File Manifest", file_manifest)
         if uploaded_files:
             logger_step(logger, "Phase 1: File Profiling - Running DistillerAgent")
             file_result = await self.agent_runner.run_agent(
@@ -34,6 +35,7 @@ class AgentLoop4:
                     "writes": ["file_profiles"]
                 }
             )
+            logger_json_block(logger, "Phase 1: File Profiling - File Profiling Result", file_result)
             if file_result["success"]:
                 file_profiles = file_result["output"]
         else:

@@ -8,6 +8,7 @@ from utils.utils import log_step, log_error
 from config.log_config import get_logger, logger_step, logger_json_block, logger_prompt, logger_code_block
 from PIL import Image
 import os
+from time import sleep
 
 logger = get_logger(__name__)
 
@@ -89,10 +90,12 @@ class AgentRunner:
             # 3. Build full prompt
             full_prompt = f"{prompt_template.strip()}{tools_text}\n\n```json\n{json.dumps(input_data, indent=2)}\n```"
             
-            #logger_prompt(logger, f"Prompt for {agent_type} agent for step {step_id}", full_prompt)
+            logger_prompt(logger, f"Prompt for {agent_type} agent for step {step_id}", full_prompt)
             
             # 4. Create model manager with agent's specified model
             model_manager = ModelManager(config["model"])
+
+            sleep(5)
             
             # 5. Generate response (with or without image)
             if image_path and os.path.exists(image_path):
@@ -106,7 +109,7 @@ class AgentRunner:
             output = parse_llm_json(response)
             # import pdb; pdb.set_trace()
 
-            #logger_json_block(logger, f"Output for {agent_type} agent for step {step_id}", output)
+            logger_json_block(logger, f"Output for {agent_type} agent for step {step_id}", output)
             
             # Calculate input text for costing
             input_text = str(input_data)

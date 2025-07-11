@@ -46,9 +46,15 @@ Your job is to generate **code** — either:
 - Deferring work that current tools can accomplish
 - Writing HTML, JS or CSS code to a file without assigning to a variable first
 - Writing multiple files in a single step, always perfer multi-step for tasks with multiple files (HTML, JS, CSS etc.)
-- NEVER use variables like globals, previous_output, locals etc. or any other variations to access file content from previous steps. Refer to examples below on how to access file content from previous steps - If you EVER do this, your code will ALWAYS throw ERROR.
+- NEVER NEVER NEVER NEVER use variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. Refer to examples below on how to access file content from previous steps - If you EVER do this, your code will ALWAYS throw ERROR.
 - ALWAYS use double quotes for strings in JAVASCRIPT files, example: timerDisplay.textContent = "Time's up!";
 - You dont need to host the web application
+- NEVER USE import json, directly use json.load...
+- IT IS STRICTLY FORBIDDEN TO USE variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. YOU WILL FAIL IF YOU DO THIS - VERY VERY IMPORTANT
+- IT IS STRICTLY FORBIDDEN TO USE variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. YOU WILL FAIL IF YOU DO THIS - VERY VERY IMPORTANT
+- IT IS STRICTLY FORBIDDEN TO USE variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. YOU WILL FAIL IF YOU DO THIS - VERY VERY IMPORTANT
+- IT IS STRICTLY FORBIDDEN TO USE variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. YOU WILL FAIL IF YOU DO THIS - VERY VERY IMPORTANT
+- IT IS STRICTLY FORBIDDEN TO USE variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. YOU WILL FAIL IF YOU DO THIS - VERY VERY IMPORTANT
 
 ✅ **REQUIRED:**
 - Always generate `code_variants` when tools are available
@@ -58,6 +64,7 @@ Your job is to generate **code** — either:
 - Always refernce file content from previous steps using example: `layout_html_XA["content"]`
 - Always write HTML, CSS and JS files using python code
 - In the FINAL STEP ALWAYS write to the output fields under `writes`
+- ALWAYS MAKE SURE PYTHON CODE INDENTATION IS APPROPRIATE
 
 ---
 
@@ -120,7 +127,7 @@ SAMPLE FOR HTML, JAVASCRIPT or CSS Files
 ```python
 html = """<html><body>Hello</body></html>"""
 with open("code/layout.html", "w") as f:
-    f.write(html)
+  f.write(html)
 return { "layout_html_3A": {
             "path": "layout.html", 
             "type": "html",
@@ -141,7 +148,7 @@ const myParagraph = document.getElementById('myParagraph');
 myParagraph.textContent = 'New text from JavaScript!';"""
 
 with open(code/my_script.js, "w") as file:
-    file.write(js_code)
+  file.write(js_code)
 return { "layout_js_3A": {
             "path": "my_script.js", 
             "type": "js",
@@ -157,7 +164,7 @@ if layout_html_3A:
     html = layout_html_3A["content"]
     html = html.replace("</body>", "<div>New Content</div></body>")
     with open("code/layout.html", "w") as f:
-        f.write(html)
+      f.write(html)
     return { "layout_html_4A": {
                 "path": "layout.html", 
                 "type": "html",
@@ -175,7 +182,7 @@ if layout_html_3A:
     if marker in html:
         html = html.replace(marker, "<div>Injected!</div>" + marker)
         with open("code/layout.html", "w") as f:
-            f.write(html)
+          f.write(html)
         return { "layout_html_3A": {
                 "path": "layout.html", 
                 "type": "html",
@@ -206,25 +213,25 @@ When Python logic requires reasoning, tool use, or chaining:
 # CODE_6A
 urls = fetch_search_urls("electric vehicle subsidies india")
 if urls:
-    raw = webpage_url_to_raw_text(urls[0])
-    return { "subsidy_data_6A": raw }
+  raw = webpage_url_to_raw_text(urls[0])
+  return { "subsidy_data_6A": raw }
 ```
 
 ```python
 # CODE_6B
 urls = fetch_search_urls("ev subsidies site:gov.in")
 if urls:
-    summary = webpage_url_to_summary(urls[0], "Summarize subsidy data")
-    return { "subsidy_summary_6B": summary }
+  summary = webpage_url_to_summary(urls[0], "Summarize subsidy data")
+  return { "subsidy_summary_6B": summary }
 ```
 
 ```python
 # CODE_6C
 urls = fetch_search_urls("india EV incentives")
 if urls:
-    raw = webpage_url_to_raw_text(urls[0])
-    summary = webpage_url_to_summary(urls[0], "Focus on state-wise subsidy")
-    return { "subsidy_raw_6C": raw, "subsidy_summary_6C": summary }
+  raw = webpage_url_to_raw_text(urls[0])
+  summary = webpage_url_to_summary(urls[0], "Focus on state-wise subsidy")
+  return { "subsidy_raw_6C": raw, "subsidy_summary_6C": summary }
 ```
 
 ---
@@ -242,5 +249,34 @@ if urls:
 - Always end with a structured `return { ... }`
 - Assume every tool returns a well-formed value, but its **internal type (e.g., list, dict)** must be verified before direct access.
 
+
+❌ **PYTHON CODING RULES:
+- DO NOT use import statements in generated code
+- The following modules are already available in the execution environment:
+  * json (use directly: json.loads(), json.dumps(), etc.)
+  * os (use directly: os.path.join(), etc.)
+  * Path (use directly: Path("filename"))
+  * All standard Python builtins (len, str, int, etc.)
+
+Example CORRECT code:
+```python
+# ✅ CORRECT - no import needed
+competitor_vehicles = json.loads(competitor_vehicles_T003[0]['text'])
+if len(competitor_vehicles) > 1:
+    competitor_2_url = competitor_vehicles[1]['url']
+    competitor_2_content = webpage_url_to_raw_text(competitor_2_url)
+    return {'competitor_2_features_T005': [{'url': competitor_2_url, 'content': competitor_2_content}]}
+else:
+    return {'competitor_2_features_T005': 'Not enough competitors found'}
+```
+
+Example INCORRECT code:
+```python
+# ❌ WRONG - don't use import statements
+import json
+competitor_vehicles = json.loads(competitor_vehicles_T003[0]['text'])
+# ... rest of code
+```
+```
 
 Use only the following tools (in positional form):

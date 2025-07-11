@@ -97,7 +97,25 @@ If data is inconsistent:
 
 ---
 
-## ✅ OUTPUT FORMAT
+## ✅ OUTPUT FORMAT WHEN call_self is TRUE
+You must return a JSON object like:
+```json
+{
+  "final_format": "html",
+  "fallback_markdown": "Minimal markdown fallback in case HTML fails",
+  "reasoning": "Used all_globals_schema fields and tool outputs to generate 12+ section report",
+  "formatted_report_T###": "<div class='report'>...</div>",
+  "call_self": true
+  "next_instruction": "Clear instruction for next iteration",
+  "iteration_context": {
+    "current_step": "basic_structure",
+    "next_step": "enrich_content",
+    "data_to_process": ["item1", "item2"]
+  },
+}
+```
+
+## ✅ OUTPUT FORMAT WHEN call_self is FALSE
 You must return a JSON object like:
 ```json
 {
@@ -108,6 +126,7 @@ You must return a JSON object like:
   "call_self": false
 }
 ```
+
 Note: You will receive a "writes" field in your input JSON containing the exact variable names you must use in your output for formatted_report_T###.
 
 FOR EXAMPLE:

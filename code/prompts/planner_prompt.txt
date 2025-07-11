@@ -278,6 +278,8 @@ Use `SchedulerAgent` to define:
 * Do NOT output placeholders or markdown
 * DO ensure each `agent_prompt` can run immediately with no improvisation
 * **NEVER create separate CoderAgent steps for generation vs execution** — CoderAgent always generates AND executes in one atomic step
+* The following agents are capable of performing multiple iterations in a single step:**FormatterAgent, RetrieverAgent & CoderAgent**. 
+  -- These agents can complete a single tasks with a single step UNLESS another agent is needed to perform an intermediate steps.
 
 ---
 

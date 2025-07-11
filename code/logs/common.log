@@ -1,22 +1,330 @@
-2025-07-10 18:22:06,778 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:10,310 - JSON_BLOCK - log_config:logger_json_block:154 - 
+================================================================================
+📌 Phase 1: File Profiling - File Manifest
+================================================================================
+[]
+================================================================================
+
+2025-07-11 14:16:10,311 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 Phase 1: File Profiling - No files uploaded, skipping DistillerAgent
 ================================================================================
 
-2025-07-10 18:22:06,778 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:10,311 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 Phase 2: Planning - Running PlannerAgent
 ================================================================================
 
-2025-07-10 18:22:06,779 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:10,311 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 🔄🔄🔄 Running PlannerAgent agent for step unknown 🔄🔄🔄
 ================================================================================
 
-2025-07-10 18:22:06,779 - INFO - agents:run_agent:53 - 🔄🔄🔄 Running PlannerAgent agent for step unknown 🔄🔄🔄
-2025-07-10 18:22:07,249 - INFO - models:generate_content:6263 - AFC is enabled with max remote calls: 10.
-2025-07-10 18:22:11,626 - INFO - _client:_send_single_request:1740 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
-2025-07-10 18:22:11,628 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:10,311 - INFO - agents:run_agent:54 - 🔄🔄🔄 Running PlannerAgent agent for step unknown 🔄🔄🔄
+2025-07-11 14:16:10,340 - PROMPT_BLOCK - log_config:logger_prompt:181 - 
+================================================================================
+📝 Prompt for PlannerAgent agent for step unknown
+================================================================================
+  ################################################################################################
+  # PlannerAgent v3 Prompt – Executive‑Grade Task Graph Generator ($100K Consulting Style)
+  # Role  : Strategic Planner
+  # Output: plan_graph + next_step_id
+  # Format: STRICT JSON (no markdown, no prose)
+  ################################################################################################
+  You are **PlannerAgent v3**, the executive planning module of an agentic system.
+  Your job is to convert a user's complex goal into a **multi-agent execution plan** in the form of a structured, directed task graph (`plan_graph`).
+  You do not execute.
+  You do not generate code or content.
+  You **only plan** — as if leading a high-stakes consulting engagement with a $100,000 budget.
+  ## 🧠 PHILOSOPHY – THINK LIKE A CONSULTING FIRM
+  You are simulating a **5–10 person consulting team**, each owning a discrete, researchable, delegate-ready task. Your plan should reflect:
+  * **High granularity**: Each task is something a junior analyst or associate could complete and report independently
+  * **Structured layers**: Phase-based grouping across Research → Extraction → Synthesis → Output
+  * **Delivery rigor**: Your final output (the graph) should be deliverable to a C-suite executive with confidence
+  * **Team modularity**: Think of how team members would divide and conquer the goal logically
+  ## ✅ MODES
+  ### "initial" Mode
+  You receive:
+  * `original_query`: The user's overall goal
+  * `planning_strategy`: "conservative" or "exploratory"
+  * `globals_schema`: Known variables and types
+  * `file_manifest`: Metadata list of any uploaded files (e.g., filename, type, length, token count)
+  You must:
+  * Output a full `plan_graph` with:
+    * `nodes`: Discrete, agent-assigned task objects (ID, description, prompt, IO)
+    * `edges`: Directed edges from "ROOT" that represent step flow
+  * Set the first `next_step_id`
+  If the user query includes file(s), you must:
+  * Include at least one task scoped to inspect or analyze the files
+  * Always reference filenames or file_manifest keys in `reads` or `agent_prompt`
+  * Break large file tasks into modular subtasks by topic, section, or time window if file size warrants
+  ### "mid_session" Mode
+  You receive:
+  * `original_query`, `planning_strategy`, `globals_schema`, `file_manifest`
+  * Prior `plan_graph`, plus `completed_steps` and `failed_steps`
+  You must:
+  * Update only what's logically affected by failures or new context
+  * Reuse step IDs where task logic remains intact
+  * Add fallback nodes or reassign agents if needed
+  ## ✅ NODE FORMAT
+  Each task (`node`) must include:
+  {
+    "id": "T003",
+    "description": "...",
+    "agent": "RetrieverAgent" | "ThinkerAgent" | "DistillerAgent" | "CoderAgent" | "FormatterAgent" | "QAAgent" | "ClarificationAgent" | "SchedulerAgent" | "PlannerAgent",
+    "agent_prompt": "...",
+    "reads": [agent_output_T002, agent_result_T001],
+    "writes": [agent_output_T003]
+  }
+  * `description`: ≤120 characters
+  * `agent_prompt`: A fully self-contained instruction — no placeholders
+  * `reads`/`writes`: Variables flowing between steps. You must **append the originating task ID** to each variable name to eliminate ambiguity (e.g., `"precision_level_T001"`, `"python_code_T002"`).  
+    - If a variable comes from a file, use the filename or file_manifest key as usual (e.g. `"survey_april.csv"`, `"file1_text"`).  
+    - If the variable originates from a task, **always tag the variable name with `_T<step_id>`** where `<step_id>` is the step that generated it.  
+    - This ensures absolute traceability across long plans.
+  ## ⚠️ CRITICAL CONSISTENCY RULE
+  **EVERY variable mentioned in `agent_prompt` MUST be included in `reads` field.**
+  ### ✅ CORRECT Example:
+  {
+    "id": "T003",
+    "agent_prompt": "Review the calculated result from `execution_result_T002` and check precision using `required_precision_T001`.",
+    "reads": ["execution_result_T002", "required_precision_T001"],
+    "writes": ["qa_verdict_T003"]
+  }
+  ### ❌ INCORRECT Example:
+  {
+    "id": "T003", 
+    "agent_prompt": "Review the calculated result from `execution_result_T002` and check precision using `required_precision_T001`.",
+    "reads": ["required_precision_T001"],  // ❌ Missing execution_result_T002
+    "writes": ["qa_verdict_T003"]
+  }
+  **Validation Checklist:**
+  - [ ] Scan each `agent_prompt` for variable references (words with underscores or backticks)
+  - [ ] Ensure ALL referenced variables are in `reads` field
+  - [ ] Ensure ALL `reads` variables actually exist or will be created by prior steps
+  - [ ] Ensure ALL `writes` variables are uniquely named with `_T<step_id>` suffix
+  **Common Mistakes to Avoid:**
+  - Mentioning `execution_result_T###` in prompt but not in reads
+  - Referencing file names in prompt but not in reads  
+  - Using variables from multiple steps without listing all in reads
+  - Forgetting to include intermediate processing results
+  ## ✅ PLANNING STYLE
+  ### 🔁 1. Unroll All Entity-Level Tasks
+  If the query references multiple **entities** (e.g., companies, tools, formats, people), create one task per entity per required action.
+  ### 📊 2. Use Entity × Dimension Matrix Unrolling
+  When research spans **multiple entities and multiple dimensions** (e.g., features, pricing, deployments, workflows), create a **task per (entity × dimension)**.
+  Example:
+  * T010: "Extract pricing model for Entity A"
+  * T011: "Extract deployment use cases for Entity A"
+  * T012: "Extract value chain roles for Entity A"
+  * T013: "Extract pricing model for Entity B"
+  * …
+  Avoid collapsing all dimensions into shared umbrella tasks.
+  ### 📅 3. Time-Indexed or Scope-Indexed Expansion
+  For timeline, schedule, or flow-based projects:
+  * Break tasks **per unit** of time (e.g., day, hour, phase)
+  * Or **per location/segment** (e.g., per city, per category)
+  ### 🧠 4. Use Role-Based Abstraction
+  Simulate layered planning like a real team:
+  * **RetrieverAgent**: Gathers raw external or document-based info. 
+   -  Capable of handling **multi-step** search and retrieval steps to fetch the desired content. 
+   -  You do not need to call this agent multiple times for the same search query, it is capable of handling multi-step search
+   -  Always invoke it only once for one specific information, like detailed information on something
+  * **ThinkerAgent**: Clusters, compares, or resolves logic
+  * **DistillerAgent**: Synthesizes summaries or bullets
+  * **CoderAgent**: Thinks, writes, and automatically executes required code in a single atomic step.  
+    - Supports multiple languages and formats, including: Python, HTML, JavaScript, CSS, Bash, DSL, SVG, spreadsheet formulas, deployment commands, and file packaging.  
+    - Capable of handling **multi-step, multi-file logic** — e.g., writing interlinked Python modules, or editing multiple HTML/CSS/JS files across steps to achieve a final behavior.  
+    - **Code execution happens automatically** after generation — you must **not include "save as", "execute", or "run this"** in the prompt.  
+    - All generated code — whether single-file or multi-file — is internally stored and managed as `code_step_T<step_id>`.  
+    - Execution outputs (e.g., stdout, return values, file artifacts) are **automatically saved** as `execution_result_T<step_id>`.  
+    - You do **not need to specify or manage filenames** — CoderAgent handles the full generation-execution lifecycle.
+    - Note: If the user has specifically mentioned then handle one task at a time, use seperate steps
+  * **FormatterAgent**: Beautifies final outputs into human-readable formats such as Markdown, HTML, tables, or annotated text.  
+    - You must ensure that you  **pass as much upstream content as possible** into the Formatter step (e.g., summaries, refined itineraries, structured costs, recommendations, travel notes, highlights).  
+    - FormatterAgent can **merge multiple inputs** and display them as a cohesive presentation (e.g., trip plan, comparison table, interactive prompt).  
+    - Output should be rich, well-structured, and visually organized — not just a flat summary.  
+    - Examples of ideal outputs include:
+      - **Markdown checklists or cards**
+      - **Cost tables with subtotals**
+      - **Day-by-day itinerary tables**
+      - **Callouts or warnings**
+    - Never discard useful context (e.g., activity plans, budget analysis, recommendations, code insights). Treat formatting as the *final step in delivery* — not just summarization.
+  * **QAAgent**: Reviews and critiques final or interim products.  
+    - If the result is acceptable, passes control to the next logical agent (e.g., FormatterAgent, SchedulerAgent).  
+    - If the result is flawed, QAAgent does **not loop back** to CoderAgent. Instead, it must:
+      - Mark the output as `"verdict": "needs_revision"`
+      - Optionally trigger a fallback path (`T###F1`) using CoderAgent
+      - Or escalate to PlannerAgent for a restructured plan
+  * **ClarificationAgent**: Queries human or confirms ambiguous steps
+  * **SchedulerAgent**: Defines time-aware or trigger-bound execution
+  ### 🪜 5. Use Phased Execution Layers
+  Organize work into structured layers:
+  1. **Discovery & Raw Retrieval**
+  2. **Entity × Dimension Mapping**
+  3. **Per-Dimension Synthesis**
+  4. **Comparative Meta-Analysis**
+  5. **Output Structuring & Formatting**
+  6. **Validation & Compliance**
+  7. **Final Presentation Prep**
+  8. **(Optional) Scheduling or Human-in-Loop Querying**
+  Each phase may involve multiple agents, but tasks must remain atomic.
+  ## 🔍 COMPARISON & GAP FILLING
+  If multiple similar entities are studied, include:
+  * **Cross-comparison steps** to highlight differences
+  * **Coverage analysis** (e.g., "which segments are underserved?")
+  * **Fallback tasks** if essential data is missing
+  ## 🗣 HUMAN-IN-THE-LOOP
+  Use `ClarificationAgent` to:
+  * Ask the human for clarification or preference
+  * Share partial results for feedback before proceeding
+  * Trigger confirmation before committing long-running paths
+  ## 🕒 TIME-AWARE EXECUTION
+  Use `SchedulerAgent` to define:
+  * Future-triggered actions
+  * Periodic or daily reruns
+  * Time-sensitive coordination tasks
+  ## ✅ EXECUTION STYLE REQUIREMENTS
+  * Simulate a real-world consulting project where each task is worth assigning to a dedicated contributor
+  * Inject logic like:
+    * "Research each [X] separately"
+    * "Analyze differences across [Y]"
+    * "Fill missing fields in table"
+    * "Ask human if gap persists"
+    * "Schedule report update in 7 days"
+  * Insert corrective loops if essential data is likely to be missing
+  * **Variable Reference Consistency**: Every variable mentioned in any `agent_prompt` must appear in that step's `reads` field
+  * **Dependency Completeness**: If an agent needs data to complete its task, that data source must be in `reads`
+  * **No Phantom References**: Never reference variables that don't exist or won't be created by prior steps
+  ## ⚠️ STRICT RULES
+  * Do NOT compress multiple deliverables into one step
+  * Do NOT assign multiple agents to a task
+  * Do NOT output placeholders or markdown
+  * DO ensure each `agent_prompt` can run immediately with no improvisation
+  * **NEVER create separate CoderAgent steps for generation vs execution** — CoderAgent always generates AND executes in one atomic step
+  * The following agents are capable of performing multiple iterations in a single step:**FormatterAgent, RetrieverAgent & CoderAgent**. 
+    -- These agents can complete a single tasks with a single step UNLESS another agent is needed to perform an intermediate steps.
+  ## ✅ OUTPUT FORMAT
+  {
+    "plan_graph": {
+      "nodes": [...],
+      "edges": [...]
+    },
+    "next_step_id": "T001"
+  }
+  Each node must be executable, unique, and atomic.
+  Your job is to **plan at the level of world-class consulting quality** — granular, logically phased, modular, and fully delegable.
+  If your plan lacks clarity, redundancy control, or structural thoroughness — we will lose a $100,000+ contract and future engagements.
+  So keep your **ULTRA THINK** mode ON while planning.
+  Return only the `plan_graph` and `next_step_id` as JSON.
+  ################################################################################################
+  {
+    "original_query": "Mahindra has launched a new vehicle called xuv 3xo, I want to know feature details, digital features, safety features, price etc. Fetch information from multiple URLs. Compile a detailed report into a report which structured and formatted; then translate it into a beautiful well formatted webpage to view the report. Use single step for RetrieverAgent and CoderAgent unless you need another Agent in between.",
+    "planning_strategy": "conservative",
+    "globals_schema": {},
+    "file_manifest": [],
+    "file_profiles": {}
+  }
+================================================================================
+
+2025-07-11 14:16:15,799 - INFO - models:generate_content:6263 - AFC is enabled with max remote calls: 10.
+2025-07-11 14:16:22,266 - INFO - _client:_send_single_request:1740 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-07-11 14:16:22,268 - JSON_BLOCK - log_config:logger_json_block:154 - 
+================================================================================
+📌 Output for PlannerAgent agent for step unknown
+================================================================================
+{
+  "plan_graph": {
+    "nodes": [
+      {
+        "id": "T001",
+        "description": "Retrieve feature details of Mahindra XUV 3XO from multiple URLs.",
+        "agent": "RetrieverAgent",
+        "agent_prompt": "Find and extract feature details, digital features, safety features, and pricing information for the Mahindra XUV 3XO from multiple reputable URLs. Perform multi-step search and retrieval to gather the desired content. Focus on official Mahindra sources and reliable automotive news websites.",
+        "reads": [],
+        "writes": [
+          "xuv_3xo_details_raw_T001"
+        ]
+      },
+      {
+        "id": "T002",
+        "description": "Distill key details from the raw data on Mahindra XUV 3XO.",
+        "agent": "DistillerAgent",
+        "agent_prompt": "Analyze the raw data `xuv_3xo_details_raw_T001` extracted from multiple URLs and distill the key details about the Mahindra XUV 3XO, focusing on feature details, digital features, safety features, and price. Summarize each aspect concisely.",
+        "reads": [
+          "xuv_3xo_details_raw_T001"
+        ],
+        "writes": [
+          "xuv_3xo_details_summary_T002"
+        ]
+      },
+      {
+        "id": "T003",
+        "description": "Structure the XUV 3XO details summary into a detailed report.",
+        "agent": "ThinkerAgent",
+        "agent_prompt": "Organize the distilled information `xuv_3xo_details_summary_T002` into a structured report with sections for feature details, digital features, safety features, and pricing. Ensure a logical flow and clear presentation of information.",
+        "reads": [
+          "xuv_3xo_details_summary_T002"
+        ],
+        "writes": [
+          "xuv_3xo_detailed_report_T003"
+        ]
+      },
+      {
+        "id": "T004",
+        "description": "Translate the structured report into a well-formatted webpage (HTML).",
+        "agent": "CoderAgent",
+        "agent_prompt": "Translate the detailed report `xuv_3xo_detailed_report_T003` into a visually appealing and well-formatted HTML webpage. Include appropriate headings, paragraphs, lists, and styling to present the information effectively. Ensure the webpage is responsive and displays correctly on different devices. Create internal CSS for styling the HTML page.",
+        "reads": [
+          "xuv_3xo_detailed_report_T003"
+        ],
+        "writes": [
+          "code_step_T004",
+          "execution_result_T004"
+        ]
+      },
+      {
+        "id": "T005",
+        "description": "Format the HTML webpage for improved readability and presentation.",
+        "agent": "FormatterAgent",
+        "agent_prompt": "Take the HTML code generated in `code_step_T004` and enhance its formatting for improved readability and visual appeal. Add any necessary CSS styling to ensure a professional and polished presentation. Include all details like feature details, digital features, safety features and pricing from `xuv_3xo_detailed_report_T003`.",
+        "reads": [
+          "code_step_T004",
+          "xuv_3xo_detailed_report_T003"
+        ],
+        "writes": [
+          "xuv_3xo_final_webpage_T005"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "source": "ROOT",
+        "target": "T001"
+      },
+      {
+        "source": "T001",
+        "target": "T002"
+      },
+      {
+        "source": "T002",
+        "target": "T003"
+      },
+      {
+        "source": "T003",
+        "target": "T004"
+      },
+      {
+        "source": "T004",
+        "target": "T005"
+      }
+    ]
+  },
+  "next_step_id": "T006"
+}
+================================================================================
+
+2025-07-11 14:16:22,268 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 Plan Graph
 ================================================================================
@@ -24,25 +332,62 @@
   "nodes": [
     {
       "id": "T001",
-      "description": "Generate dark-themed HTML/CSS/JS countdown timer (5 to 0 minutes).",
-      "agent": "CoderAgent",
-      "agent_prompt": "Generate a dark-themed HTML/CSS/JS code for a countdown timer that counts down from 5 to 0 minutes. The HTML should include a div element to display the remaining time. The JavaScript should handle the countdown logic, updating the div element every second. The CSS should style the timer with a dark theme (dark background, light text). All code should be generated in a single step, ensuring proper interlinking of HTML, CSS and JS files, to have a working timer.",
+      "description": "Retrieve feature details of Mahindra XUV 3XO from multiple URLs.",
+      "agent": "RetrieverAgent",
+      "agent_prompt": "Find and extract feature details, digital features, safety features, and pricing information for the Mahindra XUV 3XO from multiple reputable URLs. Perform multi-step search and retrieval to gather the desired content. Focus on official Mahindra sources and reliable automotive news websites.",
       "reads": [],
       "writes": [
-        "code_step_T001",
-        "execution_result_T001"
+        "xuv_3xo_details_raw_T001"
       ]
     },
     {
       "id": "T002",
-      "description": "Format the countdown timer output into a markdown card.",
-      "agent": "FormatterAgent",
-      "agent_prompt": "Format the output from the countdown timer `execution_result_T001` into a visually appealing markdown card, emphasizing the dark theme and functionality.  Include clear instructions on how to use the generated code and any relevant context.",
+      "description": "Distill key details from the raw data on Mahindra XUV 3XO.",
+      "agent": "DistillerAgent",
+      "agent_prompt": "Analyze the raw data `xuv_3xo_details_raw_T001` extracted from multiple URLs and distill the key details about the Mahindra XUV 3XO, focusing on feature details, digital features, safety features, and price. Summarize each aspect concisely.",
       "reads": [
-        "execution_result_T001"
+        "xuv_3xo_details_raw_T001"
       ],
       "writes": [
-        "formatted_countdown_timer_T002"
+        "xuv_3xo_details_summary_T002"
+      ]
+    },
+    {
+      "id": "T003",
+      "description": "Structure the XUV 3XO details summary into a detailed report.",
+      "agent": "ThinkerAgent",
+      "agent_prompt": "Organize the distilled information `xuv_3xo_details_summary_T002` into a structured report with sections for feature details, digital features, safety features, and pricing. Ensure a logical flow and clear presentation of information.",
+      "reads": [
+        "xuv_3xo_details_summary_T002"
+      ],
+      "writes": [
+        "xuv_3xo_detailed_report_T003"
+      ]
+    },
+    {
+      "id": "T004",
+      "description": "Translate the structured report into a well-formatted webpage (HTML).",
+      "agent": "CoderAgent",
+      "agent_prompt": "Translate the detailed report `xuv_3xo_detailed_report_T003` into a visually appealing and well-formatted HTML webpage. Include appropriate headings, paragraphs, lists, and styling to present the information effectively. Ensure the webpage is responsive and displays correctly on different devices. Create internal CSS for styling the HTML page.",
+      "reads": [
+        "xuv_3xo_detailed_report_T003"
+      ],
+      "writes": [
+        "code_step_T004",
+        "execution_result_T004"
+      ]
+    },
+    {
+      "id": "T005",
+      "description": "Format the HTML webpage for improved readability and presentation.",
+      "agent": "FormatterAgent",
+      "agent_prompt": "Take the HTML code generated in `code_step_T004` and enhance its formatting for improved readability and visual appeal. Add any necessary CSS styling to ensure a professional and polished presentation. Include all details like feature details, digital features, safety features and pricing from `xuv_3xo_detailed_report_T003`.",
+      "reads": [
+        "code_step_T004",
+        "xuv_3xo_detailed_report_T003"
+      ],
+      "writes": [
+        "xuv_3xo_final_webpage_T005"
       ]
     }
   ],
@@ -54,39 +399,51 @@
     {
       "source": "T001",
       "target": "T002"
+    },
+    {
+      "source": "T002",
+      "target": "T003"
+    },
+    {
+      "source": "T003",
+      "target": "T004"
+    },
+    {
+      "source": "T004",
+      "target": "T005"
     }
   ]
 }
 ================================================================================
 
-2025-07-10 18:22:11,628 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:22,269 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 Phase 3: 100% NetworkX Graph-First Execution - Calling ExecutionContextManager
 ================================================================================
 
-2025-07-10 18:22:11,628 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:22,269 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 Globals Schema
 ================================================================================
 {}
 ================================================================================
 
-2025-07-10 18:22:11,628 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:22,269 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 🔄 Calling execution context manager to execute the plan graph
 ================================================================================
 
-2025-07-10 18:22:11,628 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:22,269 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 Phase 4: Execute DAG with visualization
 ================================================================================
 
-2025-07-10 18:22:11,629 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:22,269 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
-🟢 Starting execution of plan graph with 3 nodes and 2 edges
+🟢 Starting execution of plan graph with 6 nodes and 5 edges
 ================================================================================
 
-2025-07-10 18:22:11,629 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:22,269 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 Plan Graph
 ================================================================================
@@ -106,13 +463,12 @@
     },
     {
       "id": "T001",
-      "description": "Generate dark-themed HTML/CSS/JS countdown timer (5 to 0 minutes).",
-      "agent": "CoderAgent",
-      "agent_prompt": "Generate a dark-themed HTML/CSS/JS code for a countdown timer that counts down from 5 to 0 minutes. The HTML should include a div element to display the remaining time. The JavaScript should handle the countdown logic, updating the div element every second. The CSS should style the timer with a dark theme (dark background, light text). All code should be generated in a single step, ensuring proper interlinking of HTML, CSS and JS files, to have a working timer.",
+      "description": "Retrieve feature details of Mahindra XUV 3XO from multiple URLs.",
+      "agent": "RetrieverAgent",
+      "agent_prompt": "Find and extract feature details, digital features, safety features, and pricing information for the Mahindra XUV 3XO from multiple reputable URLs. Perform multi-step search and retrieval to gather the desired content. Focus on official Mahindra sources and reliable automotive news websites.",
       "reads": [],
       "writes": [
-        "code_step_T001",
-        "execution_result_T001"
+        "xuv_3xo_details_raw_T001"
       ],
       "status": "pending",
       "output": null,
@@ -124,14 +480,73 @@
     },
     {
       "id": "T002",
-      "description": "Format the countdown timer output into a markdown card.",
-      "agent": "FormatterAgent",
-      "agent_prompt": "Format the output from the countdown timer `execution_result_T001` into a visually appealing markdown card, emphasizing the dark theme and functionality.  Include clear instructions on how to use the generated code and any relevant context.",
+      "description": "Distill key details from the raw data on Mahindra XUV 3XO.",
+      "agent": "DistillerAgent",
+      "agent_prompt": "Analyze the raw data `xuv_3xo_details_raw_T001` extracted from multiple URLs and distill the key details about the Mahindra XUV 3XO, focusing on feature details, digital features, safety features, and price. Summarize each aspect concisely.",
       "reads": [
-        "execution_result_T001"
+        "xuv_3xo_details_raw_T001"
       ],
       "writes": [
-        "formatted_countdown_timer_T002"
+        "xuv_3xo_details_summary_T002"
+      ],
+      "status": "pending",
+      "output": null,
+      "error": null,
+      "cost": 0.0,
+      "start_time": null,
+      "end_time": null,
+      "execution_time": 0.0
+    },
+    {
+      "id": "T003",
+      "description": "Structure the XUV 3XO details summary into a detailed report.",
+      "agent": "ThinkerAgent",
+      "agent_prompt": "Organize the distilled information `xuv_3xo_details_summary_T002` into a structured report with sections for feature details, digital features, safety features, and pricing. Ensure a logical flow and clear presentation of information.",
+      "reads": [
+        "xuv_3xo_details_summary_T002"
+      ],
+      "writes": [
+        "xuv_3xo_detailed_report_T003"
+      ],
+      "status": "pending",
+      "output": null,
+      "error": null,
+      "cost": 0.0,
+      "start_time": null,
+      "end_time": null,
+      "execution_time": 0.0
+    },
+    {
+      "id": "T004",
+      "description": "Translate the structured report into a well-formatted webpage (HTML).",
+      "agent": "CoderAgent",
+      "agent_prompt": "Translate the detailed report `xuv_3xo_detailed_report_T003` into a visually appealing and well-formatted HTML webpage. Include appropriate headings, paragraphs, lists, and styling to present the information effectively. Ensure the webpage is responsive and displays correctly on different devices. Create internal CSS for styling the HTML page.",
+      "reads": [
+        "xuv_3xo_detailed_report_T003"
+      ],
+      "writes": [
+        "code_step_T004",
+        "execution_result_T004"
+      ],
+      "status": "pending",
+      "output": null,
+      "error": null,
+      "cost": 0.0,
+      "start_time": null,
+      "end_time": null,
+      "execution_time": 0.0
+    },
+    {
+      "id": "T005",
+      "description": "Format the HTML webpage for improved readability and presentation.",
+      "agent": "FormatterAgent",
+      "agent_prompt": "Take the HTML code generated in `code_step_T004` and enhance its formatting for improved readability and visual appeal. Add any necessary CSS styling to ensure a professional and polished presentation. Include all details like feature details, digital features, safety features and pricing from `xuv_3xo_detailed_report_T003`.",
+      "reads": [
+        "code_step_T004",
+        "xuv_3xo_detailed_report_T003"
+      ],
+      "writes": [
+        "xuv_3xo_final_webpage_T005"
       ],
       "status": "pending",
       "output": null,
@@ -150,240 +565,632 @@
     {
       "source": "T001",
       "target": "T002"
+    },
+    {
+      "source": "T002",
+      "target": "T003"
+    },
+    {
+      "source": "T003",
+      "target": "T004"
+    },
+    {
+      "source": "T004",
+      "target": "T005"
     }
   ]
 }
 ================================================================================
 
-2025-07-10 18:22:11,629 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:22,269 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 Max iterations: 20
 ================================================================================
 
-2025-07-10 18:22:11,629 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:22,269 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 🔄 Iteration: 0 for max iterations: 20
 ================================================================================
 
-2025-07-10 18:22:11,635 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:22,279 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 🔄 Executing agents steps which are ready for execution: ['T001']
 ================================================================================
 
-2025-07-10 18:22:11,635 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:22,279 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
-🟢 🔄 Executing step: T001 by calling agent CoderAgent
+🟢 🔄 Executing step: T001 by calling agent RetrieverAgent
 ================================================================================
 
-2025-07-10 18:22:11,635 - INFO - flow:_execute_step_self:337 - 🔄 Running agent CoderAgent for step T001
-2025-07-10 18:22:11,635 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:22,280 - INFO - flow:_execute_step_self:339 - 🔄 Running agent RetrieverAgent for step T001
+2025-07-11 14:16:22,280 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 🔄 Agent Input for step T001
 ================================================================================
 {
   "step_id": "T001",
-  "agent_prompt": "Generate a dark-themed HTML/CSS/JS code for a countdown timer that counts down from 5 to 0 minutes. The HTML should include a div element to display the remaining time. The JavaScript should handle the countdown logic, updating the div element every second. The CSS should style the timer with a dark theme (dark background, light text). All code should be generated in a single step, ensuring proper interlinking of HTML, CSS and JS files, to have a working timer.",
+  "agent_prompt": "Find and extract feature details, digital features, safety features, and pricing information for the Mahindra XUV 3XO from multiple reputable URLs. Perform multi-step search and retrieval to gather the desired content. Focus on official Mahindra sources and reliable automotive news websites.",
   "reads": [],
   "writes": [
-    "code_step_T001",
-    "execution_result_T001"
+    "xuv_3xo_details_raw_T001"
   ],
   "inputs": {}
 }
 ================================================================================
 
-2025-07-10 18:22:11,635 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:22,280 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
-🟢 🔄🔄🔄 Running CoderAgent agent for step T001 🔄🔄🔄
+🟢 🔄🔄🔄 Running RetrieverAgent agent for step T001 🔄🔄🔄
 ================================================================================
 
-2025-07-10 18:22:11,635 - INFO - agents:run_agent:53 - 🔄🔄🔄 Running CoderAgent agent for step T001 🔄🔄🔄
-2025-07-10 18:22:12,030 - INFO - models:generate_content:6263 - AFC is enabled with max remote calls: 10.
-2025-07-10 18:22:16,554 - INFO - _client:_send_single_request:1740 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
-2025-07-10 18:22:16,556 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:22,280 - INFO - agents:run_agent:54 - 🔄🔄🔄 Running RetrieverAgent agent for step T001 🔄🔄🔄
+2025-07-11 14:16:22,315 - PROMPT_BLOCK - log_config:logger_prompt:181 - 
+================================================================================
+📝 Prompt for RetrieverAgent agent for step T001
+================================================================================
+  ################################################################################################
+  # RetrieverAgent Prompt – Gemini Flash 2.0
+  # Role  : Multi-Step Data Acquisition Specialist with mandatory tool usage
+  # Output: Structured JSON with code_variants when tools available + call_self coordination
+  # Format: STRICT JSON (no markdown, no prose)
+  ################################################################################################
+  You are **RetrieverAgent**, the system's data acquisition specialist.
+  Your job is to retrieve **external information** in structured format using available tools.
+  You DO NOT summarize, analyze, or interpret data.
+  You DO NOT format or filter results.
+  You retrieve **raw data as-is** for other agents to process.
+  You retrieve **as-is**, from sources including:
+  - Uploaded files (PDF, CSV, DOCX, TXT, XLSX)
+  - Web pages (static or dynamic)
+  - Search engines (DuckDuckGo, Brave, Google, YouTube)
+  - Internal document RAG search (via FAISS or vector index)
+  ## 🎯 EXECUTION LOGIC
+  ### **Step 1: Assess call_self Need**
+  **Set `call_self: true` when:**
+  - Task requires multiple sequential steps (search → then extract details)
+  - Need to process results from first tool call in a second iteration
+  - Workflow has clear step 1 → step 2 dependency
+  - Task asks for "detailed" or "comprehensive" data requiring 2+ tool calls
+  - If the query demands "detailed" or "comprehensive" data, prefer multiple steps
+  **Set `call_self: false` when:**
+  - Single tool call can complete the entire task
+  - Task is simple and atomic
+  - No sequential dependencies needed
+  ### **Step 2: Generate code_variants (MANDATORY if tools available)**
+  **🚨 CRITICAL RULE: IF TOOLS ARE PROVIDED, YOU MUST USE THEM**
+  ❌ **FORBIDDEN:**
+  - Setting `call_self: true` without generating `code_variants`
+  - Returning empty results when tools can provide data
+  - Deferring work that current tools can accomplish
+  - NEVER USE import json, directly use json.load...
+  - NEVER NEVER NEVER NEVER use variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. Refer to examples below on how to access file content from previous steps - If you EVER do this, your code will ALWAYS throw ERROR.
+  - NEVER USE import json, directly use json.load...
+  - IT IS STRICTLY FORBIDDEN TO USE variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. YOU WILL FAIL IF YOU DO THIS - VERY VERY IMPORTANT
+  ✅ **REQUIRED:**
+  - Always generate `code_variants` when tools are available
+  - Use tools immediately to gather data
+  - Only defer to next iteration what truly requires previous results
+  - Always use ONLY the variable in the "results" from previous steps 
+  ## 📋 OUTPUT STRUCTURE
+  ### **Multi-Step Mode (call_self: true):**
+  {
+    "result_variable_T001": [],  // Empty initially, will be populated by code execution
+    "call_self": true,
+    "next_instruction": "Clear instruction for next iteration",
+    "iteration_context": {
+      "current_step": "search_phase",
+      "next_step": "extraction_phase",
+      "data_to_process": ["item1", "item2"]
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('query here', 10)\nreturn {'search_results_1A': urls}",
+      "CODE_1B": "urls = fetch_search_urls('alternative query', 8)\nreturn {'search_results_1B': urls}"
+    }
+  }
+  ### **Single-Step Mode (call_self: false):**
+  {
+    "result_variable_T001": [],  // Will be populated by code execution
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'page_content_1A': content}",
+      "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'pdf_content_1B': text}"
+    }
+  }
+  ## 🔧 TOOL USAGE PATTERNS
+  ### **Tool Selection Guide:**
+  **Use `search_web_with_text_content` when:**
+  - Need bulk data extraction (URLs + content in one step)
+  - Want comprehensive information from multiple sources
+  - Task requires "detailed" or "comprehensive" research
+  - Prefer efficiency over granular control
+  **Use `fetch_search_urls` + `webpage_url_to_raw_text` when:**
+  - Need precise control over which URLs to process
+  - Want to filter URLs before extraction
+  - Processing specific/targeted URLs only
+  - Two-step workflow with URL validation
+  ### **Bulk Research Workflow (PREFERRED for comprehensive tasks):**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Research top hotels in NYC with detailed pricing and amenities",
+    "writes": ["nyc_hotel_options_T004"],
+    "available_tools": ["search_web_with_text_content", "fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT (Single Call with Bulk Extraction):**
+  {
+    "nyc_hotel_options_T004": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "results = search_web_with_text_content('NYC hotels Manhattan booking prices amenities', 8)\nreturn {'nyc_hotel_options_T004': results}",
+      "CODE_1B": "data = search_web_with_text_content('New York City hotels under $200 ratings reviews', 6)\nreturn {'nyc_hotel_options_T004': data}"
+    }
+  }
+  ### **Granular Control Workflow (when URL filtering needed):**
+  **INPUT RECEIVED (First Call):**
+  {
+    "agent_prompt": "Find flight options from Bangalore to NYC, but only from major airlines",
+    "writes": ["blr_to_nyc_flight_options_T001"],
+    "available_tools": ["fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT (First Call - Search Phase):**
+  {
+    "blr_to_nyc_flight_options_T001": [],
+    "call_self": true,
+    "next_instruction": "Extract detailed flight information from major airline URLs only",
+    "iteration_context": {
+      "current_step": "search_urls",
+      "next_step": "extract_details",
+      "filter_criteria": "major_airlines_only"
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('Bangalore to NYC flights Emirates Air India British Airways', 10)\nreturn {'flight_urls_1A': urls}",
+      "CODE_1B": "urls = fetch_search_urls('BLR to JFK flights major airlines booking', 8)\nreturn {'flight_urls_1B': urls}"
+    }
+  }
+  **INPUT RECEIVED (Second Call):**
+  {
+    "agent_prompt": "Extract detailed flight information from major airline URLs only",
+    "writes": ["blr_to_nyc_flight_options_T001"],
+    "available_tools": ["webpage_url_to_raw_text", "webpage_url_to_llm_summary"],
+    "previous_output" {
+      ...
+      "result": {
+        ....
+        "flight_urls_1A": ["https://emirates.com/flights", "https://airindia.com/booking", "https://britishairways.com"]
+        ...
+      ...
+      }
+    }
+  }
+  ## 🚨 IMPORTANT: 
+      1. The variables which have the data needed for next steps are inside the results section of previous_output
+      2. Always use ONLY these variable names in your code to refer to data obtained from previous steps
+  **CORRECT OUTPUT (Second Call - Extraction Phase):**
+  {
+    "blr_to_nyc_flight_options_T001": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_2A": "results = []\nfor url in flight_urls_1A[:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'blr_to_nyc_flight_options_T001': results}",
+      "CODE_2B": "details = []\nfor url in flight_urls_1A[:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract flight prices, schedules, and booking details')\n    details.append(info)\nreturn {'blr_to_nyc_flight_options_T001': details}"
+    }
+  }
+  ### **Updated Simple Examples:**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Find startup companies in nuclear fusion sector",
+    "writes": ["fusion_startups_T010"],
+    "available_tools": ["search_web_with_text_content", "fetch_search_urls"]
+  }
+  **CORRECT OUTPUT (Bulk Research - PREFERRED):**
+  {
+    "fusion_startups_T010": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "results = search_web_with_text_content('nuclear fusion reactor startups companies funding', 8)\nreturn {'fusion_startups_T010': results}",
+      "CODE_1B": "data = search_web_with_text_content('nuclear fusion energy startups 2024 investment', 6)\nreturn {'fusion_startups_T010': data}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how `fusion_startups_T010` from "writes" field appears in:
+  1. JSON key (exact match)
+  2. Return statement (exact same name)
+  3. Both code variants use the SAME variable name
+  ## ✅ OUTPUT VARIABLE NAMING
+  You will receive a "writes" field containing exact variable names to use.
+  **CRITICAL**: Use exact variable names from "writes" field as your JSON keys.
+  Example:
+  - Input: `"writes": ["flight_options_T001", "hotel_data_T002"]`
+  - Output: `{"flight_options_T001": [...], "hotel_data_T002": [...]}`
+  ## 🔧 CODE_VARIANTS RULES
+  ### **Tool Call Format:**
+  - No `await`, no `def`, no markdown
+  - Use positional arguments only
+  - Always end with `return {...}`
+  - Variable names should be descriptive
+  - Never use previous_output or any other response data data fields from previous_output as variable names
+  - The output of the previous step will be available in the "writes" field, you can reference the same in the next step if results are available
+  ### **Good Examples:**
+  ```python
+  # Web search
+  urls = fetch_search_urls('bangalore to NYC flights', 10)
+  return {'flight_urls_1A': urls}
+  # Content extraction
+  content = webpage_url_to_raw_text('https://emirates.com/flights')
+  return {'flight_details_1A': content}
+  # Document processing
+  text = convert_pdf_to_markdown('travel_guide.pdf')
+  return {'guide_content_1A': text}
+  # Multiple URL processing
+  results = []
+  for url in url_list[:3]:
+      content = webpage_url_to_raw_text(url)
+      results.append({'url': url, 'text': content})
+  return {'extracted_content_1A': results}
+  ### **Bad Examples:**
+  ```python
+  # ❌ Using await
+  content = await webpage_url_to_raw_text(url)
+  # ❌ Using def
+  def get_content():
+      return webpage_url_to_raw_text(url)
+  # ❌ Using keyword arguments
+  urls = fetch_search_urls(query='flights', limit=10)
+  ## 🚨 ERROR HANDLING
+  If tools fail or no relevant tools available:
+  {
+    "error_T001": {
+      "type": "tool_unavailable",
+      "message": "No suitable tools for this task type",
+      "requested_action": "manual_research_required"
+    },
+    "call_self": false
+  }
+  ## 📝 TASK EXAMPLES
+  ### **Simple Web Search:**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Find flight options from Bangalore to NYC",
+    "writes": ["flight_options_T001"],
+    "available_tools": ["search_web_with_text_content", "fetch_search_urls"]
+  }
+  **CORRECT OUTPUT (Bulk Research - PREFERRED):**
+  {
+    "flight_options_T001": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "results = search_web_with_text_content('Bangalore to NYC flights booking prices', 8)\nreturn {'flight_options_T001': results}",
+      "CODE_1B": "urls = fetch_search_urls('BLR to JFK flights Emirates Air India', 10)\nreturn {'flight_options_T001': urls}"
+    }
+  }
+  ### **Complex Research Task:**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Research top 5 hotels in NYC with detailed pricing and amenities",
+    "writes": ["hotel_research_T005"],
+    "available_tools": ["search_web_with_text_content", "fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT (Multi-step approach):**
+  {
+    "hotel_research_T005": [],
+    "call_self": true,
+    "next_instruction": "Extract detailed information from the top 5 hotel URLs including prices, ratings, amenities, and booking details",
+    "iteration_context": {
+      "current_step": "search_hotels",
+      "next_step": "extract_details",
+      "target_count": 5
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('top hotels NYC Manhattan booking prices', 12)\nreturn {'hotel_urls_1A': urls}",
+      "CODE_1B": "results = search_web_with_text_content('best rated hotels New York City amenities', 8)\nreturn {'hotel_research_T005': results}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how the variable names from "writes" field are used correctly in the return statements.
+  ## ✅ OUTPUT STRUCTURE
+  ### **Multi-Step Mode (call_self: true):**
+  {
+    "result_variable_T001": [],  // Use exact name from "writes" field
+    "call_self": true,
+    "next_instruction": "Clear instruction for next iteration",
+    "iteration_context": {
+      "current_step": "search_phase",
+      "next_step": "extraction_phase",
+      "data_to_process": ["item1", "item2"]
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('query here', 10)\nreturn {'result_variable_T001': urls}",
+      "CODE_1B": "urls = fetch_search_urls('alternative query', 8)\nreturn {'result_variable_T001': urls}"
+    }
+  }
+  ### **Single-Step Mode (call_self: false):**
+  {
+    "result_variable_T001": [],  // Use exact name from "writes" field
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'result_variable_T001': content}",
+      "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'result_variable_T001': text}"
+    }
+  }
+  ## ✅ TOOL CONSTRAINTS
+  - Use up to 5 tool calls per iteration
+  - No `await`, no `def`, no markdown, no keyword arguments
+  - Always end with a structured `return { ... }`
+  - When using call_self, ensure next_instruction is clear and actionable
+  - Assume every tool returns a well-formed value, but verify types before access
+  Use only the following tools (in positional form):
+  ## 🎯 COMPLETE INPUT/OUTPUT EXAMPLES WITH WRITES FIELD
+  ### **Example 1: Single Flight Search**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Find flight options from Bangalore to NYC",
+    "writes": ["flight_options_T001"],
+    "available_tools": ["fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT:**
+  {
+    "flight_options_T001": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('Bangalore to NYC flights booking', 10)\nreturn {'flight_options_T001': urls}",
+      "CODE_1B": "urls = fetch_search_urls('BLR to JFK flights Emirates Air India', 8)\nreturn {'flight_options_T001': urls}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how `flight_options_T001` appears in:
+  1. JSON key (from "writes" field)
+  2. Return statement (exact same name)
+  3. Both code variants use the SAME variable name
+  ### **Example 2: Multi-Step Hotel Research**
+  **INPUT RECEIVED (First Call):**
+  {
+    "agent_prompt": "Research top 5 hotels in NYC with detailed pricing and amenities",
+    "writes": ["hotel_research_T005"],
+    "available_tools": ["fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT (First Call):**
+  {
+    "hotel_research_T005": [],
+    "call_self": true,
+    "next_instruction": "Extract detailed hotel information from the found URLs including prices, ratings, and amenities",
+    "iteration_context": {
+      "current_step": "search_urls",
+      "next_step": "extract_details",
+      "target_count": 5
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('top hotels NYC Manhattan booking prices', 12)\nreturn {'hotel_urls_1A': urls}",
+      "CODE_1B": "results = search_web_with_text_content('best rated hotels New York City amenities', 8)\nreturn {'hotel_research_T005': results}"
+    }
+  }
+  **INPUT RECEIVED (Second Call):**
+  {
+    "agent_prompt": "Extract detailed hotel information from the found URLs including prices, ratings, and amenities",
+    "writes": ["hotel_research_T005"],
+    "available_tools": ["webpage_url_to_raw_text", "webpage_url_to_llm_summary"],
+    "previous_output" { 
+      ...
+      "result": {
+        ....
+        "hotel_urls_1A": ["https://booking.com/hotel1", "https://expedia.com/hotel2", "https://hotels.com/hotel3"]
+        ...
+      }
+      ...
+    }
+  }
+  ## 🚨 IMPORTANT: 
+      1. The variables which have the data needed for next steps are inside the results section of previous_output
+      2. Always use ONLY these variable names in your code to refer to data obtained from previous steps
+  **CORRECT OUTPUT (Second Call):**
+  {
+    "hotel_research_T005": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_2A": "results = []\nfor url in hotel_urls_1A[:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'hotel_research_T005': results}",
+      "CODE_2B": "details = []\nfor url in hotel_urls_1A[:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract hotel name, price, rating, amenities')\n    details.append(info)\nreturn {'hotel_research_T005': details}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how `hotel_research_T005` appears in:
+  1. JSON key (from "writes" field) 
+  2. Return statement (exact same name)
+  3. Both iterations use the SAME final variable name
+  ### **Example 3: Multiple Writes Fields**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Find startup companies in nuclear fusion and quantum computing sectors",
+    "writes": ["fusion_startups_T010", "quantum_startups_T011"],
+    "available_tools": ["fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT:**
+  {
+    "fusion_startups_T010": [],
+    "quantum_startups_T011": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "fusion_urls = fetch_search_urls('nuclear fusion reactor startups companies', 8)\nquantum_urls = fetch_search_urls('quantum computing startups companies', 8)\nreturn {'fusion_startups_T010': fusion_urls, 'quantum_startups_T011': quantum_urls}",
+      "CODE_1B": "fusion_companies = fetch_search_urls('nuclear fusion energy startups 2024', 6)\nquantum_companies = fetch_search_urls('quantum computing AI startups', 6)\nreturn {'fusion_startups_T010': fusion_companies, 'quantum_startups_T011': quantum_companies}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how BOTH write fields appear in:
+  1. JSON keys (from "writes" field)
+  2. Return statement (exact same names)
+  3. Both code variants return BOTH variables
+  ## 🚨 TRIPLE ENFORCEMENT RULE
+  **RULE 1:** Your JSON output MUST contain every key from the "writes" field
+  **RULE 2:** Your code_variants MUST return data using those exact key names  
+  **RULE 3:** The return statement MUST use the exact variable names from "writes"
+  **❌ WRONG EXAMPLES:**
+  Input writes: `["flight_options_T001"]`
+  ```python
+  # ❌ Wrong variable name in return
+  urls = fetch_search_urls('flights', 10)
+  return {'flight_urls_1A': urls}  # Should be 'flight_options_T001'
+  ```python
+  # ❌ Missing writes field in JSON output
+  {
+    "call_self": false,  # Missing "flight_options_T001": []
+    "code_variants": {...}
+  }
+  ❌ **PYTHON CODING RULES:
+  - DO NOT use import statements in generated code
+  - The following modules are already available in the execution environment:
+    * json (use directly: json.loads(), json.dumps(), etc.)
+    * os (use directly: os.path.join(), etc.)
+    * Path (use directly: Path("filename"))
+    * All standard Python builtins (len, str, int, etc.)
+  Example CORRECT code:
+  ```python
+  # ✅ CORRECT - no import needed
+  competitor_vehicles = json.loads(competitor_vehicles_T003[0]['text'])
+  if len(competitor_vehicles) > 1:
+      competitor_2_url = competitor_vehicles[1]['url']
+      competitor_2_content = webpage_url_to_raw_text(competitor_2_url)
+      return {'competitor_2_features_T005': [{'url': competitor_2_url, 'content': competitor_2_content}]}
+  else:
+      return {'competitor_2_features_T005': 'Not enough competitors found'}
+  Example INCORRECT code:
+  ```python
+  # ❌ WRONG - NEVER use import statements
+  import json
+  competitor_vehicles = json.loads(competitor_vehicles_T003[0]['text'])
+  # ... rest of code
+  ### Available Tools
+  - `search_stored_documents_rag(string)` # Search old stored documents like PDF, DOCX, TXT, etc. to get relevant extracts. 
+  - `convert_pdf_to_markdown(string)` # Convert PDF to markdown. 
+  - `caption_images(string)` # 
+  - `search_web_with_text_content(string, integer)` # Search web and return URLs with extracted text content. Gets both URLs and readable text from top search results.
+  - `fetch_search_urls(string, integer)` # Get top website URLs for your search query. Just get's the URL's not the contents
+  - `webpage_url_to_raw_text(string)` # Extract readable text from a webpage
+  - `webpage_url_to_llm_summary(string, any)` # Summarize the webpage using a custom prompt if provided, otherwise fallback to default.
+  {
+    "step_id": "T001",
+    "agent_prompt": "Find and extract feature details, digital features, safety features, and pricing information for the Mahindra XUV 3XO from multiple reputable URLs. Perform multi-step search and retrieval to gather the desired content. Focus on official Mahindra sources and reliable automotive news websites.",
+    "reads": [],
+    "writes": [
+      "xuv_3xo_details_raw_T001"
+    ],
+    "inputs": {}
+  }
+================================================================================
+
+2025-07-11 14:16:27,970 - INFO - models:generate_content:6263 - AFC is enabled with max remote calls: 10.
+2025-07-11 14:16:31,080 - INFO - _client:_send_single_request:1740 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-07-11 14:16:31,082 - JSON_BLOCK - log_config:logger_json_block:154 - 
+================================================================================
+📌 Output for RetrieverAgent agent for step T001
+================================================================================
+{
+  "xuv_3xo_details_raw_T001": [],
+  "call_self": true,
+  "next_instruction": "Extract feature details, digital features, safety features, and pricing information from the retrieved URLs.",
+  "iteration_context": {
+    "current_step": "search_urls",
+    "next_step": "extract_details",
+    "data_type": "Mahindra XUV 3XO feature details"
+  },
+  "code_variants": {
+    "CODE_1A": "urls = fetch_search_urls('Mahindra XUV 3XO features details pricing', 10)\nreturn {'xuv_3xo_details_raw_T001': urls}",
+    "CODE_1B": "urls = fetch_search_urls('Mahindra XUV 3XO digital features safety features', 8)\nreturn {'xuv_3xo_details_raw_T001': urls}"
+  }
+}
+================================================================================
+
+2025-07-11 14:16:31,083 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 🔄 Agent Output for step T001
 ================================================================================
 {
   "success": true,
-  "agent_type": "CoderAgent",
+  "agent_type": "RetrieverAgent",
   "output": {
-    "code_step_T001": [],
-    "call_self": false,
-    "code_variants": {
-      "CODE_1A": "html_code = '''\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n'''\n\ncss_code = '''\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n'''\n\njs_code = '''\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n'''\n\nwith open(\"code/index.html\", \"w\") as f:\n    f.write(html_code)\n\nwith open(\"code/style.css\", \"w\") as f:\n    f.write(css_code)\n\nwith open(\"code/script.js\", \"w\") as f:\n    f.write(js_code)\n\nreturn {\n    \"code_step_T001\": {\n        \"html\": {\n            \"path\": \"index.html\",\n            \"type\": \"html\",\n            \"content\": html_code,\n            \"updated_at\": \"T001\"\n        },\n        \"css\": {\n            \"path\": \"style.css\",\n            \"type\": \"css\",\n            \"content\": css_code,\n            \"updated_at\": \"T001\"\n        },\n        \"js\": {\n            \"path\": \"script.js\",\n            \"type\": \"js\",\n            \"content\": js_code,\n            \"updated_at\": \"T001\"\n        }\n    },\n    \"execution_result_T001\": \"Countdown timer generated with dark theme.\"\n}\n"
+    "xuv_3xo_details_raw_T001": [],
+    "call_self": true,
+    "next_instruction": "Extract feature details, digital features, safety features, and pricing information from the retrieved URLs.",
+    "iteration_context": {
+      "current_step": "search_urls",
+      "next_step": "extract_details",
+      "data_type": "Mahindra XUV 3XO feature details"
     },
-    "cost": 0.00013130000000000002,
-    "input_tokens": 133,
-    "output_tokens": 295,
-    "total_tokens": 428
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('Mahindra XUV 3XO features details pricing', 10)\nreturn {'xuv_3xo_details_raw_T001': urls}",
+      "CODE_1B": "urls = fetch_search_urls('Mahindra XUV 3XO digital features safety features', 8)\nreturn {'xuv_3xo_details_raw_T001': urls}"
+    },
+    "cost": 4.1099999999999996e-05,
+    "input_tokens": 75,
+    "output_tokens": 84,
+    "total_tokens": 159
   }
 }
 ================================================================================
 
-2025-07-10 18:22:16,556 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:31,083 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 🔄 Need to execute code for step: T001
 ================================================================================
 
-2025-07-10 18:22:16,556 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:31,083 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 🔄 Executing code for step: T001 - Self iteration: 0
 ================================================================================
 
-2025-07-10 18:22:16,556 - ERROR - log_config:logger_code_block:223 - Failed to format code block: 'dict' object has no attribute 'split'
-2025-07-10 18:22:16,556 - INFO - log_config:logger_code_block:224 - Code to execute:: {'CODE_1A': 'html_code = \'\'\'\n<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Countdown Timer</title>\n    <link rel="stylesheet" href="style.css">\n</head>\n<body>\n    <div class="timer" id="timer">5:00</div>\n    <script src="script.js"></script>\n</body>\n</html>\n\'\'\'\n\ncss_code = \'\'\'\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n\'\'\'\n\njs_code = \'\'\'\nconst timerDisplay = document.getElementById(\'timer\');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? "0" + minutes : minutes;\n    seconds = seconds < 10 ? "0" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = "Time\'s up!";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n\'\'\'\n\nwith open("code/index.html", "w") as f:\n    f.write(html_code)\n\nwith open("code/style.css", "w") as f:\n    f.write(css_code)\n\nwith open("code/script.js", "w") as f:\n    f.write(js_code)\n\nreturn {\n    "code_step_T001": {\n        "html": {\n            "path": "index.html",\n            "type": "html",\n            "content": html_code,\n            "updated_at": "T001"\n        },\n        "css": {\n            "path": "style.css",\n            "type": "css",\n            "content": css_code,\n            "updated_at": "T001"\n        },\n        "js": {\n            "path": "script.js",\n            "type": "js",\n            "content": js_code,\n            "updated_at": "T001"\n        }\n    },\n    "execution_result_T001": "Countdown timer generated with dark theme."\n}'}
-2025-07-10 18:22:16,556 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:31,083 - ERROR - log_config:logger_code_block:223 - Failed to format code block: 'dict' object has no attribute 'split'
+2025-07-11 14:16:31,083 - INFO - log_config:logger_code_block:224 - Code to execute:: {'CODE_1A': "urls = fetch_search_urls('Mahindra XUV 3XO features details pricing', 10)\nreturn {'xuv_3xo_details_raw_T001': urls}", 'CODE_1B': "urls = fetch_search_urls('Mahindra XUV 3XO digital features safety features', 8)\nreturn {'xuv_3xo_details_raw_T001': urls}"}
+2025-07-11 14:16:31,083 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 Code to execute for step T001 - Self iteration: 0
 ================================================================================
 {
-  "CODE_1A": "html_code = '''\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n'''\n\ncss_code = '''\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n'''\n\njs_code = '''\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n'''\n\nwith open(\"code/index.html\", \"w\") as f:\n    f.write(html_code)\n\nwith open(\"code/style.css\", \"w\") as f:\n    f.write(css_code)\n\nwith open(\"code/script.js\", \"w\") as f:\n    f.write(js_code)\n\nreturn {\n    \"code_step_T001\": {\n        \"html\": {\n            \"path\": \"index.html\",\n            \"type\": \"html\",\n            \"content\": html_code,\n            \"updated_at\": \"T001\"\n        },\n        \"css\": {\n            \"path\": \"style.css\",\n            \"type\": \"css\",\n            \"content\": css_code,\n            \"updated_at\": \"T001\"\n        },\n        \"js\": {\n            \"path\": \"script.js\",\n            \"type\": \"js\",\n            \"content\": js_code,\n            \"updated_at\": \"T001\"\n        }\n    },\n    \"execution_result_T001\": \"Countdown timer generated with dark theme.\"\n}"
+  "CODE_1A": "urls = fetch_search_urls('Mahindra XUV 3XO features details pricing', 10)\nreturn {'xuv_3xo_details_raw_T001': urls}",
+  "CODE_1B": "urls = fetch_search_urls('Mahindra XUV 3XO digital features safety features', 8)\nreturn {'xuv_3xo_details_raw_T001': urls}"
 }
 ================================================================================
 
-2025-07-10 18:22:16,556 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:31,083 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 Step: T001 - Globals schema:
 ================================================================================
 {}
 ================================================================================
 
-2025-07-10 18:22:16,556 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:31,083 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 Step: T001 - Reads:
 ================================================================================
 []
 ================================================================================
 
-2025-07-10 18:22:16,556 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:31,083 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 Step: T001 - Node data:
 ================================================================================
 {
   "id": "T001",
-  "description": "Generate dark-themed HTML/CSS/JS countdown timer (5 to 0 minutes).",
-  "agent": "CoderAgent",
-  "agent_prompt": "Generate a dark-themed HTML/CSS/JS code for a countdown timer that counts down from 5 to 0 minutes. The HTML should include a div element to display the remaining time. The JavaScript should handle the countdown logic, updating the div element every second. The CSS should style the timer with a dark theme (dark background, light text). All code should be generated in a single step, ensuring proper interlinking of HTML, CSS and JS files, to have a working timer.",
+  "description": "Retrieve feature details of Mahindra XUV 3XO from multiple URLs.",
+  "agent": "RetrieverAgent",
+  "agent_prompt": "Find and extract feature details, digital features, safety features, and pricing information for the Mahindra XUV 3XO from multiple reputable URLs. Perform multi-step search and retrieval to gather the desired content. Focus on official Mahindra sources and reliable automotive news websites.",
   "reads": [],
   "writes": [
-    "code_step_T001",
-    "execution_result_T001"
+    "xuv_3xo_details_raw_T001"
   ],
   "status": "running",
   "output": null,
   "error": null,
   "cost": 0.0,
-  "start_time": "2025-07-10T12:52:11.633592",
+  "start_time": "2025-07-11T08:46:22.277559",
   "end_time": null,
   "execution_time": 0.0
 }
 ================================================================================
 
-2025-07-10 18:22:16,556 - INFO - contextManager:_auto_execute_code:146 - 🔄 Executing code for step: T001 - Code key: CODE_1A
-2025-07-10 18:22:16,566 - CODE_BLOCK - log_config:logger_code_block:221 - 
+2025-07-11 14:16:31,084 - INFO - contextManager:_auto_execute_code:146 - 🔄 Executing code for step: T001 - Code key: CODE_1A
+2025-07-11 14:16:49,935 - CODE_BLOCK - log_config:logger_code_block:221 - 
 ================================================================================
 📝 Step: T001 - Code executed - Results:
 ================================================================================
 🔧 Code:
 ================================================================================
-  code_step_T001 = []
-  total_tokens = 428
+  xuv_3xo_details_raw_T001 = []
+  next_instruction = 'Extract feature details, digital features, safety features, and pricing information from the retrieved URLs.'
+  iteration_context = {'current_step': 'search_urls', 'next_step': 'extract_details', 'data_type': 'Mahindra XUV 3XO feature details'}
+  total_tokens = 159
   reads_data = {}
-  html_code = '''
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Countdown Timer</title>
-      <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-      <div class="timer" id="timer">5:00</div>
-      <script src="script.js"></script>
-  </body>
-  </html>
-  '''
-  
-  css_code = '''
-  body {
-      background-color: #222;
-      color: #fff;
-      font-family: sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-  }
-  
-  .timer {
-      font-size: 5rem;
-      font-weight: bold;
-      padding: 20px;
-      border: 5px solid #fff;
-      border-radius: 10px;
-  }
-  '''
-  
-  js_code = '''
-  const timerDisplay = document.getElementById('timer');
-  let timeLeft = 300; // 5 minutes in seconds
-  
-  function updateTimer() {
-      let minutes = Math.floor(timeLeft / 60);
-      let seconds = timeLeft % 60;
-  
-      minutes = minutes < 10 ? "0" + minutes : minutes;
-      seconds = seconds < 10 ? "0" + seconds : seconds;
-  
-      timerDisplay.textContent = `${minutes}:${seconds}`;
-  
-      if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          timerDisplay.textContent = "Time's up!";
-      } else {
-          timeLeft--;
-      }
-  }
-  
-  updateTimer(); // Initial call to display the timer immediately
-  const timerInterval = setInterval(updateTimer, 1000);
-  '''
-  
-  with open("code/index.html", "w") as f:
-      f.write(html_code)
-  
-  with open("code/style.css", "w") as f:
-      f.write(css_code)
-  
-  with open("code/script.js", "w") as f:
-      f.write(js_code)
-  
-  return {
-      "code_step_T001": {
-          "html": {
-              "path": "index.html",
-              "type": "html",
-              "content": html_code,
-              "updated_at": "T001"
-          },
-          "css": {
-              "path": "style.css",
-              "type": "css",
-              "content": css_code,
-              "updated_at": "T001"
-          },
-          "js": {
-              "path": "script.js",
-              "type": "js",
-              "content": js_code,
-              "updated_at": "T001"
-          }
-      },
-      "execution_result_T001": "Countdown timer generated with dark theme."
-  }
+  urls = fetch_search_urls('Mahindra XUV 3XO features details pricing', 10)
+  return {'xuv_3xo_details_raw_T001': urls}
 
 ================================================================================
 📊 Output:
@@ -393,29 +1200,20 @@
       "all_errors": [],
       "created_files": [],
       "error": null,
-      "execution_time": 0.007052799992379732,
+      "execution_time": 18.847985200001858,
       "result": {
-        "code_step_T001": {
-          "css": {
-            "content": "\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n",
-            "path": "style.css",
-            "type": "css",
-            "updated_at": "T001"
-          },
-          "html": {
-            "content": "\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n",
-            "path": "index.html",
-            "type": "html",
-            "updated_at": "T001"
-          },
-          "js": {
-            "content": "\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n",
-            "path": "script.js",
-            "type": "js",
-            "updated_at": "T001"
-          }
-        },
-        "execution_result_T001": "Countdown timer generated with dark theme."
+        "xuv_3xo_details_raw_T001": [
+          "https://auto.mahindra.com/suv/xuv3xo/X3XO.html",
+          "https://www.carwale.com/mahindra-cars/xuv-3xo/",
+          "https://www.carbike360.com/cars/mahindra/xuv-3xo",
+          "https://www.cardekho.com/mahindra/xuv-3xo/specs",
+          "https://www.autocarindia.com/auto-features/mahindra-xuv-3xo-price-variants-features-explained-431425",
+          "https://www.cartrade.com/mahindra-cars/xuv-3xo/",
+          "http://www.india-garage.in/new-cars/mahindra-xuv-3xo.html",
+          "https://www.spinny.com/blog/mahindra-xuv-3xo-price-specifiations-images/",
+          "https://www.smartprix.com/cars/mahindra-xuv-3xo-ppd1j64mf7yr",
+          "https://www.getonroadprice.com/new-cars/mahindra/xuv-3xo"
+        ]
       },
       "status": "success",
       "successful_variant": "CODE_1A",
@@ -427,19 +1225,19 @@
     "operations": [
       "python_code"
     ],
-    "session_id": "52151931",
+    "session_id": "52223582",
     "status": "success",
-    "total_time": 0.009215199999744073
+    "total_time": 18.850419099995634
   }
 ================================================================================
 
-2025-07-10 18:22:16,567 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:49,935 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 🔄 Execution result for step T001
 ================================================================================
 {
   "status": "success",
-  "session_id": "52151931",
+  "session_id": "52223582",
   "operations": [
     "python_code"
   ],
@@ -448,207 +1246,127 @@
   "code_results": {
     "status": "success",
     "result": {
-      "code_step_T001": {
-        "html": {
-          "path": "index.html",
-          "type": "html",
-          "content": "\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n",
-          "updated_at": "T001"
-        },
-        "css": {
-          "path": "style.css",
-          "type": "css",
-          "content": "\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n",
-          "updated_at": "T001"
-        },
-        "js": {
-          "path": "script.js",
-          "type": "js",
-          "content": "\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n",
-          "updated_at": "T001"
-        }
-      },
-      "execution_result_T001": "Countdown timer generated with dark theme."
+      "xuv_3xo_details_raw_T001": [
+        "https://auto.mahindra.com/suv/xuv3xo/X3XO.html",
+        "https://www.carwale.com/mahindra-cars/xuv-3xo/",
+        "https://www.carbike360.com/cars/mahindra/xuv-3xo",
+        "https://www.cardekho.com/mahindra/xuv-3xo/specs",
+        "https://www.autocarindia.com/auto-features/mahindra-xuv-3xo-price-variants-features-explained-431425",
+        "https://www.cartrade.com/mahindra-cars/xuv-3xo/",
+        "http://www.india-garage.in/new-cars/mahindra-xuv-3xo.html",
+        "https://www.spinny.com/blog/mahindra-xuv-3xo-price-specifiations-images/",
+        "https://www.smartprix.com/cars/mahindra-xuv-3xo-ppd1j64mf7yr",
+        "https://www.getonroadprice.com/new-cars/mahindra/xuv-3xo"
+      ]
     },
     "created_files": [],
-    "execution_time": 0.007052799992379732,
+    "execution_time": 18.847985200001858,
     "error": null,
     "successful_variant": "CODE_1A",
     "total_variants_tried": 1,
     "all_errors": []
   },
-  "total_time": 0.009215199999744073,
+  "total_time": 18.850419099995634,
   "error": null,
   "executed_variant": "CODE_1A"
 }
 ================================================================================
 
-2025-07-10 18:22:16,567 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:49,935 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 🔄 Code execution successful for step T001, merging execution result with output
 ================================================================================
 
-2025-07-10 18:22:16,567 - INFO - contextManager:_merge_execution_results:216 - 🔄 Merging execution results into agent output
-2025-07-10 18:22:16,567 - INFO - contextManager:_merge_execution_results:247 - ✅ Merged execution results into agent output
-2025-07-10 18:22:16,567 - INFO - flow:_execute_step_self:354 - ✅ Merged execution result with output for step T001
-2025-07-10 18:22:16,567 - INFO - contextManager:update_globals_schema:453 - 🔄 Updating globals_schema: Extracting code_step_T001
-2025-07-10 18:22:16,567 - INFO - contextManager:update_globals_schema:460 - 🔄 Inside Updating globals_schema: Extracting code_step_T001 = {'html': {'path': 'index.html', 'type': 'html', 'content': '\n<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Countdown Timer</title>\n    <link rel="stylesheet" href="style.css">\n</head>\n<body>\n    <div class="timer" id="timer">5:00</div>\n    <script src="script.js"></script>\n</body>\n</html>\n', 'updated_at': 'T001'}, 'css': {'path': 'style.css', 'type': 'css', 'content': '\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n', 'updated_at': 'T001'}, 'js': {'path': 'script.js', 'type': 'js', 'content': '\nconst timerDisplay = document.getElementById(\'timer\');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? "0" + minutes : minutes;\n    seconds = seconds < 10 ? "0" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = "Time\'s up!";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n', 'updated_at': 'T001'}}
-2025-07-10 18:22:16,567 - INFO - contextManager:update_globals_schema:463 - ✅ Extracted code_step_T001 from execution result
-2025-07-10 18:22:16,567 - INFO - contextManager:update_globals_schema:453 - 🔄 Updating globals_schema: Extracting execution_result_T001
-2025-07-10 18:22:16,568 - INFO - contextManager:update_globals_schema:460 - 🔄 Inside Updating globals_schema: Extracting execution_result_T001 = Countdown timer generated with dark theme.
-2025-07-10 18:22:16,568 - INFO - contextManager:update_globals_schema:463 - ✅ Extracted execution_result_T001 from execution result
-2025-07-10 18:22:16,568 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:49,935 - INFO - contextManager:_merge_execution_results:216 - 🔄 Merging execution results into agent output
+2025-07-11 14:16:49,935 - INFO - contextManager:_merge_execution_results:247 - ✅ Merged execution results into agent output
+2025-07-11 14:16:49,935 - INFO - flow:_execute_step_self:356 - ✅ Merged execution result with output for step T001
+2025-07-11 14:16:49,935 - INFO - contextManager:update_globals_schema:453 - 🔄 Updating globals_schema: Extracting xuv_3xo_details_raw_T001
+2025-07-11 14:16:49,935 - INFO - contextManager:update_globals_schema:460 - 🔄 Inside Updating globals_schema: Extracting xuv_3xo_details_raw_T001 = ['https://auto.mahindra.com/suv/xuv3xo/X3XO.html', 'https://www.carwale.com/mahindra-cars/xuv-3xo/', 'https://www.carbike360.com/cars/mahindra/xuv-3xo', 'https://www.cardekho.com/mahindra/xuv-3xo/specs', 'https://www.autocarindia.com/auto-features/mahindra-xuv-3xo-price-variants-features-explained-431425', 'https://www.cartrade.com/mahindra-cars/xuv-3xo/', 'http://www.india-garage.in/new-cars/mahindra-xuv-3xo.html', 'https://www.spinny.com/blog/mahindra-xuv-3xo-price-specifiations-images/', 'https://www.smartprix.com/cars/mahindra-xuv-3xo-ppd1j64mf7yr', 'https://www.getonroadprice.com/new-cars/mahindra/xuv-3xo']
+2025-07-11 14:16:49,936 - INFO - contextManager:update_globals_schema:463 - ✅ Extracted xuv_3xo_details_raw_T001 from execution result
+2025-07-11 14:16:49,936 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
 🟢 ✅ T001 updated globals_schema
 ================================================================================
 
-2025-07-10 18:22:16,568 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:49,936 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
 📌 🔄 Marked done for step T001 - Globals schema
 ================================================================================
 {
-  "code_step_T001": {
-    "html": {
-      "path": "index.html",
-      "type": "html",
-      "content": "\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n",
-      "updated_at": "T001"
-    },
-    "css": {
-      "path": "style.css",
-      "type": "css",
-      "content": "\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n",
-      "updated_at": "T001"
-    },
-    "js": {
-      "path": "script.js",
-      "type": "js",
-      "content": "\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n",
-      "updated_at": "T001"
-    }
-  },
-  "execution_result_T001": "Countdown timer generated with dark theme."
+  "xuv_3xo_details_raw_T001": [
+    "https://auto.mahindra.com/suv/xuv3xo/X3XO.html",
+    "https://www.carwale.com/mahindra-cars/xuv-3xo/",
+    "https://www.carbike360.com/cars/mahindra/xuv-3xo",
+    "https://www.cardekho.com/mahindra/xuv-3xo/specs",
+    "https://www.autocarindia.com/auto-features/mahindra-xuv-3xo-price-variants-features-explained-431425",
+    "https://www.cartrade.com/mahindra-cars/xuv-3xo/",
+    "http://www.india-garage.in/new-cars/mahindra-xuv-3xo.html",
+    "https://www.spinny.com/blog/mahindra-xuv-3xo-price-specifiations-images/",
+    "https://www.smartprix.com/cars/mahindra-xuv-3xo-ppd1j64mf7yr",
+    "https://www.getonroadprice.com/new-cars/mahindra/xuv-3xo"
+  ]
 }
 ================================================================================
 
-2025-07-10 18:22:16,570 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:49,940 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
-🟢 🔄 Agent CoderAgent for step T001 - call_self: False
-================================================================================
-
-2025-07-10 18:22:16,570 - STEP_BLOCK - log_config:logger_step:98 - 
-================================================================================
-🟢 ✅ Step T001 completed successfully
+🟢 🔄 Agent RetrieverAgent for step T001 - call_self: True
 ================================================================================
 
-2025-07-10 18:22:16,570 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:49,945 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
-🟢 🔄 Executing agents steps which are ready for execution: ['T001'] - Completed
-================================================================================
-
-2025-07-10 18:22:16,571 - JSON_BLOCK - log_config:logger_json_block:154 - 
-================================================================================
-📌 🔄 Results of executing agents steps which are ready for execution: ['T001']
-================================================================================
-[
-  {
-    "success": true,
-    "agent_type": "CoderAgent",
-    "output": {
-      "code_step_T001": [],
-      "call_self": false,
-      "code_variants": {
-        "CODE_1A": "html_code = '''\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n'''\n\ncss_code = '''\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n'''\n\njs_code = '''\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n'''\n\nwith open(\"code/index.html\", \"w\") as f:\n    f.write(html_code)\n\nwith open(\"code/style.css\", \"w\") as f:\n    f.write(css_code)\n\nwith open(\"code/script.js\", \"w\") as f:\n    f.write(js_code)\n\nreturn {\n    \"code_step_T001\": {\n        \"html\": {\n            \"path\": \"index.html\",\n            \"type\": \"html\",\n            \"content\": html_code,\n            \"updated_at\": \"T001\"\n        },\n        \"css\": {\n            \"path\": \"style.css\",\n            \"type\": \"css\",\n            \"content\": css_code,\n            \"updated_at\": \"T001\"\n        },\n        \"js\": {\n            \"path\": \"script.js\",\n            \"type\": \"js\",\n            \"content\": js_code,\n            \"updated_at\": \"T001\"\n        }\n    },\n    \"execution_result_T001\": \"Countdown timer generated with dark theme.\"\n}\n"
-      },
-      "cost": 0.00013130000000000002,
-      "input_tokens": 133,
-      "output_tokens": 295,
-      "total_tokens": 428,
-      "execution_result": {
-        "status": "success",
-        "result": {
-          "code_step_T001": {
-            "html": {
-              "path": "index.html",
-              "type": "html",
-              "content": "\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n",
-              "updated_at": "T001"
-            },
-            "css": {
-              "path": "style.css",
-              "type": "css",
-              "content": "\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n",
-              "updated_at": "T001"
-            },
-            "js": {
-              "path": "script.js",
-              "type": "js",
-              "content": "\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n",
-              "updated_at": "T001"
-            }
-          },
-          "execution_result_T001": "Countdown timer generated with dark theme."
-        },
-        "created_files": [],
-        "execution_time": 0.007052799992379732,
-        "error": null,
-        "successful_variant": "CODE_1A",
-        "total_variants_tried": 1,
-        "all_errors": []
-      },
-      "execution_status": "success",
-      "execution_error": null,
-      "execution_time": 0.009215199999744073,
-      "executed_variant": "CODE_1A"
-    }
-  }
-]
+🟢 🔄 Call self detected for step: T001 (iteration 2/10)
 ================================================================================
 
-2025-07-10 18:22:16,571 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:49,945 - INFO - flow:_execute_step_self:393 - 🔄 Inputs for step T001 - iteration 2/10: {}
+2025-07-11 14:16:49,946 - INFO - flow:_execute_step_self:402 - 🔄 Running agent RetrieverAgent for step T001 with input for iteration 2/10
+2025-07-11 14:16:49,946 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
-📌 🔄 Processing Result for step T001
+📌 Agent Input for step T001 - iteration 2/10
 ================================================================================
 {
-  "success": true,
-  "agent_type": "CoderAgent",
-  "output": {
-    "code_step_T001": [],
-    "call_self": false,
-    "code_variants": {
-      "CODE_1A": "html_code = '''\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n'''\n\ncss_code = '''\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n'''\n\njs_code = '''\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n'''\n\nwith open(\"code/index.html\", \"w\") as f:\n    f.write(html_code)\n\nwith open(\"code/style.css\", \"w\") as f:\n    f.write(css_code)\n\nwith open(\"code/script.js\", \"w\") as f:\n    f.write(js_code)\n\nreturn {\n    \"code_step_T001\": {\n        \"html\": {\n            \"path\": \"index.html\",\n            \"type\": \"html\",\n            \"content\": html_code,\n            \"updated_at\": \"T001\"\n        },\n        \"css\": {\n            \"path\": \"style.css\",\n            \"type\": \"css\",\n            \"content\": css_code,\n            \"updated_at\": \"T001\"\n        },\n        \"js\": {\n            \"path\": \"script.js\",\n            \"type\": \"js\",\n            \"content\": js_code,\n            \"updated_at\": \"T001\"\n        }\n    },\n    \"execution_result_T001\": \"Countdown timer generated with dark theme.\"\n}\n"
+  "step_id": "T001",
+  "agent_prompt": "Extract feature details, digital features, safety features, and pricing information from the retrieved URLs.",
+  "reads": [],
+  "writes": [
+    "xuv_3xo_details_raw_T001"
+  ],
+  "inputs": {},
+  "previous_output": {
+    "xuv_3xo_details_raw_T001": [],
+    "call_self": true,
+    "next_instruction": "Extract feature details, digital features, safety features, and pricing information from the retrieved URLs.",
+    "iteration_context": {
+      "current_step": "search_urls",
+      "next_step": "extract_details",
+      "data_type": "Mahindra XUV 3XO feature details"
     },
-    "cost": 0.00013130000000000002,
-    "input_tokens": 133,
-    "output_tokens": 295,
-    "total_tokens": 428,
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('Mahindra XUV 3XO features details pricing', 10)\nreturn {'xuv_3xo_details_raw_T001': urls}",
+      "CODE_1B": "urls = fetch_search_urls('Mahindra XUV 3XO digital features safety features', 8)\nreturn {'xuv_3xo_details_raw_T001': urls}"
+    },
+    "cost": 4.1099999999999996e-05,
+    "input_tokens": 75,
+    "output_tokens": 84,
+    "total_tokens": 159,
     "execution_result": {
       "status": "success",
       "result": {
-        "code_step_T001": {
-          "html": {
-            "path": "index.html",
-            "type": "html",
-            "content": "\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n",
-            "updated_at": "T001"
-          },
-          "css": {
-            "path": "style.css",
-            "type": "css",
-            "content": "\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n",
-            "updated_at": "T001"
-          },
-          "js": {
-            "path": "script.js",
-            "type": "js",
-            "content": "\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n",
-            "updated_at": "T001"
-          }
-        },
-        "execution_result_T001": "Countdown timer generated with dark theme."
+        "xuv_3xo_details_raw_T001": [
+          "https://auto.mahindra.com/suv/xuv3xo/X3XO.html",
+          "https://www.carwale.com/mahindra-cars/xuv-3xo/",
+          "https://www.carbike360.com/cars/mahindra/xuv-3xo",
+          "https://www.cardekho.com/mahindra/xuv-3xo/specs",
+          "https://www.autocarindia.com/auto-features/mahindra-xuv-3xo-price-variants-features-explained-431425",
+          "https://www.cartrade.com/mahindra-cars/xuv-3xo/",
+          "http://www.india-garage.in/new-cars/mahindra-xuv-3xo.html",
+          "https://www.spinny.com/blog/mahindra-xuv-3xo-price-specifiations-images/",
+          "https://www.smartprix.com/cars/mahindra-xuv-3xo-ppd1j64mf7yr",
+          "https://www.getonroadprice.com/new-cars/mahindra/xuv-3xo"
+        ]
       },
       "created_files": [],
-      "execution_time": 0.007052799992379732,
+      "execution_time": 18.847985200001858,
       "error": null,
       "successful_variant": "CODE_1A",
       "total_variants_tried": 1,
@@ -656,300 +1374,775 @@
     },
     "execution_status": "success",
     "execution_error": null,
-    "execution_time": 0.009215199999744073,
+    "execution_time": 18.850419099995634,
     "executed_variant": "CODE_1A"
+  },
+  "iteration_context": {
+    "current_step": "search_urls",
+    "next_step": "extract_details",
+    "data_type": "Mahindra XUV 3XO feature details"
   }
 }
 ================================================================================
 
-2025-07-10 18:22:16,571 - INFO - flow:_execute_dag:175 - ✅ Marking step T001 as completed
-2025-07-10 18:22:16,571 - INFO - contextManager:mark_done:359 - 🔄 Marked done: Extracting code_step_T001
-2025-07-10 18:22:16,572 - INFO - contextManager:mark_done:369 - ✅ Extracted code_step_T001 from execution result
-2025-07-10 18:22:16,572 - INFO - contextManager:mark_done:359 - 🔄 Marked done: Extracting execution_result_T001
-2025-07-10 18:22:16,573 - INFO - contextManager:mark_done:369 - ✅ Extracted execution_result_T001 from execution result
-2025-07-10 18:22:16,573 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:49,946 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
-🟢 ✅ T001 completed successfully
+🟢 🔄🔄🔄 Running RetrieverAgent agent for step T001 🔄🔄🔄
 ================================================================================
 
-2025-07-10 18:22:16,576 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:49,946 - INFO - agents:run_agent:54 - 🔄🔄🔄 Running RetrieverAgent agent for step T001 🔄🔄🔄
+2025-07-11 14:16:49,952 - PROMPT_BLOCK - log_config:logger_prompt:181 - 
 ================================================================================
-🟢 🔄 Iteration: 1 for max iterations: 20
+📝 Prompt for RetrieverAgent agent for step T001
+================================================================================
+  ################################################################################################
+  # RetrieverAgent Prompt – Gemini Flash 2.0
+  # Role  : Multi-Step Data Acquisition Specialist with mandatory tool usage
+  # Output: Structured JSON with code_variants when tools available + call_self coordination
+  # Format: STRICT JSON (no markdown, no prose)
+  ################################################################################################
+  You are **RetrieverAgent**, the system's data acquisition specialist.
+  Your job is to retrieve **external information** in structured format using available tools.
+  You DO NOT summarize, analyze, or interpret data.
+  You DO NOT format or filter results.
+  You retrieve **raw data as-is** for other agents to process.
+  You retrieve **as-is**, from sources including:
+  - Uploaded files (PDF, CSV, DOCX, TXT, XLSX)
+  - Web pages (static or dynamic)
+  - Search engines (DuckDuckGo, Brave, Google, YouTube)
+  - Internal document RAG search (via FAISS or vector index)
+  ## 🎯 EXECUTION LOGIC
+  ### **Step 1: Assess call_self Need**
+  **Set `call_self: true` when:**
+  - Task requires multiple sequential steps (search → then extract details)
+  - Need to process results from first tool call in a second iteration
+  - Workflow has clear step 1 → step 2 dependency
+  - Task asks for "detailed" or "comprehensive" data requiring 2+ tool calls
+  - If the query demands "detailed" or "comprehensive" data, prefer multiple steps
+  **Set `call_self: false` when:**
+  - Single tool call can complete the entire task
+  - Task is simple and atomic
+  - No sequential dependencies needed
+  ### **Step 2: Generate code_variants (MANDATORY if tools available)**
+  **🚨 CRITICAL RULE: IF TOOLS ARE PROVIDED, YOU MUST USE THEM**
+  ❌ **FORBIDDEN:**
+  - Setting `call_self: true` without generating `code_variants`
+  - Returning empty results when tools can provide data
+  - Deferring work that current tools can accomplish
+  - NEVER USE import json, directly use json.load...
+  - NEVER NEVER NEVER NEVER use variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. Refer to examples below on how to access file content from previous steps - If you EVER do this, your code will ALWAYS throw ERROR.
+  - NEVER USE import json, directly use json.load...
+  - IT IS STRICTLY FORBIDDEN TO USE variables like ***globals, previous_output, locals etc. or any other variations*** to access file content from previous steps. YOU WILL FAIL IF YOU DO THIS - VERY VERY IMPORTANT
+  ✅ **REQUIRED:**
+  - Always generate `code_variants` when tools are available
+  - Use tools immediately to gather data
+  - Only defer to next iteration what truly requires previous results
+  - Always use ONLY the variable in the "results" from previous steps 
+  ## 📋 OUTPUT STRUCTURE
+  ### **Multi-Step Mode (call_self: true):**
+  {
+    "result_variable_T001": [],  // Empty initially, will be populated by code execution
+    "call_self": true,
+    "next_instruction": "Clear instruction for next iteration",
+    "iteration_context": {
+      "current_step": "search_phase",
+      "next_step": "extraction_phase",
+      "data_to_process": ["item1", "item2"]
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('query here', 10)\nreturn {'search_results_1A': urls}",
+      "CODE_1B": "urls = fetch_search_urls('alternative query', 8)\nreturn {'search_results_1B': urls}"
+    }
+  }
+  ### **Single-Step Mode (call_self: false):**
+  {
+    "result_variable_T001": [],  // Will be populated by code execution
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'page_content_1A': content}",
+      "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'pdf_content_1B': text}"
+    }
+  }
+  ## 🔧 TOOL USAGE PATTERNS
+  ### **Tool Selection Guide:**
+  **Use `search_web_with_text_content` when:**
+  - Need bulk data extraction (URLs + content in one step)
+  - Want comprehensive information from multiple sources
+  - Task requires "detailed" or "comprehensive" research
+  - Prefer efficiency over granular control
+  **Use `fetch_search_urls` + `webpage_url_to_raw_text` when:**
+  - Need precise control over which URLs to process
+  - Want to filter URLs before extraction
+  - Processing specific/targeted URLs only
+  - Two-step workflow with URL validation
+  ### **Bulk Research Workflow (PREFERRED for comprehensive tasks):**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Research top hotels in NYC with detailed pricing and amenities",
+    "writes": ["nyc_hotel_options_T004"],
+    "available_tools": ["search_web_with_text_content", "fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT (Single Call with Bulk Extraction):**
+  {
+    "nyc_hotel_options_T004": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "results = search_web_with_text_content('NYC hotels Manhattan booking prices amenities', 8)\nreturn {'nyc_hotel_options_T004': results}",
+      "CODE_1B": "data = search_web_with_text_content('New York City hotels under $200 ratings reviews', 6)\nreturn {'nyc_hotel_options_T004': data}"
+    }
+  }
+  ### **Granular Control Workflow (when URL filtering needed):**
+  **INPUT RECEIVED (First Call):**
+  {
+    "agent_prompt": "Find flight options from Bangalore to NYC, but only from major airlines",
+    "writes": ["blr_to_nyc_flight_options_T001"],
+    "available_tools": ["fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT (First Call - Search Phase):**
+  {
+    "blr_to_nyc_flight_options_T001": [],
+    "call_self": true,
+    "next_instruction": "Extract detailed flight information from major airline URLs only",
+    "iteration_context": {
+      "current_step": "search_urls",
+      "next_step": "extract_details",
+      "filter_criteria": "major_airlines_only"
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('Bangalore to NYC flights Emirates Air India British Airways', 10)\nreturn {'flight_urls_1A': urls}",
+      "CODE_1B": "urls = fetch_search_urls('BLR to JFK flights major airlines booking', 8)\nreturn {'flight_urls_1B': urls}"
+    }
+  }
+  **INPUT RECEIVED (Second Call):**
+  {
+    "agent_prompt": "Extract detailed flight information from major airline URLs only",
+    "writes": ["blr_to_nyc_flight_options_T001"],
+    "available_tools": ["webpage_url_to_raw_text", "webpage_url_to_llm_summary"],
+    "previous_output" {
+      ...
+      "result": {
+        ....
+        "flight_urls_1A": ["https://emirates.com/flights", "https://airindia.com/booking", "https://britishairways.com"]
+        ...
+      ...
+      }
+    }
+  }
+  ## 🚨 IMPORTANT: 
+      1. The variables which have the data needed for next steps are inside the results section of previous_output
+      2. Always use ONLY these variable names in your code to refer to data obtained from previous steps
+  **CORRECT OUTPUT (Second Call - Extraction Phase):**
+  {
+    "blr_to_nyc_flight_options_T001": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_2A": "results = []\nfor url in flight_urls_1A[:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'blr_to_nyc_flight_options_T001': results}",
+      "CODE_2B": "details = []\nfor url in flight_urls_1A[:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract flight prices, schedules, and booking details')\n    details.append(info)\nreturn {'blr_to_nyc_flight_options_T001': details}"
+    }
+  }
+  ### **Updated Simple Examples:**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Find startup companies in nuclear fusion sector",
+    "writes": ["fusion_startups_T010"],
+    "available_tools": ["search_web_with_text_content", "fetch_search_urls"]
+  }
+  **CORRECT OUTPUT (Bulk Research - PREFERRED):**
+  {
+    "fusion_startups_T010": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "results = search_web_with_text_content('nuclear fusion reactor startups companies funding', 8)\nreturn {'fusion_startups_T010': results}",
+      "CODE_1B": "data = search_web_with_text_content('nuclear fusion energy startups 2024 investment', 6)\nreturn {'fusion_startups_T010': data}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how `fusion_startups_T010` from "writes" field appears in:
+  1. JSON key (exact match)
+  2. Return statement (exact same name)
+  3. Both code variants use the SAME variable name
+  ## ✅ OUTPUT VARIABLE NAMING
+  You will receive a "writes" field containing exact variable names to use.
+  **CRITICAL**: Use exact variable names from "writes" field as your JSON keys.
+  Example:
+  - Input: `"writes": ["flight_options_T001", "hotel_data_T002"]`
+  - Output: `{"flight_options_T001": [...], "hotel_data_T002": [...]}`
+  ## 🔧 CODE_VARIANTS RULES
+  ### **Tool Call Format:**
+  - No `await`, no `def`, no markdown
+  - Use positional arguments only
+  - Always end with `return {...}`
+  - Variable names should be descriptive
+  - Never use previous_output or any other response data data fields from previous_output as variable names
+  - The output of the previous step will be available in the "writes" field, you can reference the same in the next step if results are available
+  ### **Good Examples:**
+  ```python
+  # Web search
+  urls = fetch_search_urls('bangalore to NYC flights', 10)
+  return {'flight_urls_1A': urls}
+  # Content extraction
+  content = webpage_url_to_raw_text('https://emirates.com/flights')
+  return {'flight_details_1A': content}
+  # Document processing
+  text = convert_pdf_to_markdown('travel_guide.pdf')
+  return {'guide_content_1A': text}
+  # Multiple URL processing
+  results = []
+  for url in url_list[:3]:
+      content = webpage_url_to_raw_text(url)
+      results.append({'url': url, 'text': content})
+  return {'extracted_content_1A': results}
+  ### **Bad Examples:**
+  ```python
+  # ❌ Using await
+  content = await webpage_url_to_raw_text(url)
+  # ❌ Using def
+  def get_content():
+      return webpage_url_to_raw_text(url)
+  # ❌ Using keyword arguments
+  urls = fetch_search_urls(query='flights', limit=10)
+  ## 🚨 ERROR HANDLING
+  If tools fail or no relevant tools available:
+  {
+    "error_T001": {
+      "type": "tool_unavailable",
+      "message": "No suitable tools for this task type",
+      "requested_action": "manual_research_required"
+    },
+    "call_self": false
+  }
+  ## 📝 TASK EXAMPLES
+  ### **Simple Web Search:**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Find flight options from Bangalore to NYC",
+    "writes": ["flight_options_T001"],
+    "available_tools": ["search_web_with_text_content", "fetch_search_urls"]
+  }
+  **CORRECT OUTPUT (Bulk Research - PREFERRED):**
+  {
+    "flight_options_T001": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "results = search_web_with_text_content('Bangalore to NYC flights booking prices', 8)\nreturn {'flight_options_T001': results}",
+      "CODE_1B": "urls = fetch_search_urls('BLR to JFK flights Emirates Air India', 10)\nreturn {'flight_options_T001': urls}"
+    }
+  }
+  ### **Complex Research Task:**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Research top 5 hotels in NYC with detailed pricing and amenities",
+    "writes": ["hotel_research_T005"],
+    "available_tools": ["search_web_with_text_content", "fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT (Multi-step approach):**
+  {
+    "hotel_research_T005": [],
+    "call_self": true,
+    "next_instruction": "Extract detailed information from the top 5 hotel URLs including prices, ratings, amenities, and booking details",
+    "iteration_context": {
+      "current_step": "search_hotels",
+      "next_step": "extract_details",
+      "target_count": 5
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('top hotels NYC Manhattan booking prices', 12)\nreturn {'hotel_urls_1A': urls}",
+      "CODE_1B": "results = search_web_with_text_content('best rated hotels New York City amenities', 8)\nreturn {'hotel_research_T005': results}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how the variable names from "writes" field are used correctly in the return statements.
+  ## ✅ OUTPUT STRUCTURE
+  ### **Multi-Step Mode (call_self: true):**
+  {
+    "result_variable_T001": [],  // Use exact name from "writes" field
+    "call_self": true,
+    "next_instruction": "Clear instruction for next iteration",
+    "iteration_context": {
+      "current_step": "search_phase",
+      "next_step": "extraction_phase",
+      "data_to_process": ["item1", "item2"]
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('query here', 10)\nreturn {'result_variable_T001': urls}",
+      "CODE_1B": "urls = fetch_search_urls('alternative query', 8)\nreturn {'result_variable_T001': urls}"
+    }
+  }
+  ### **Single-Step Mode (call_self: false):**
+  {
+    "result_variable_T001": [],  // Use exact name from "writes" field
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'result_variable_T001': content}",
+      "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'result_variable_T001': text}"
+    }
+  }
+  ## ✅ TOOL CONSTRAINTS
+  - Use up to 5 tool calls per iteration
+  - No `await`, no `def`, no markdown, no keyword arguments
+  - Always end with a structured `return { ... }`
+  - When using call_self, ensure next_instruction is clear and actionable
+  - Assume every tool returns a well-formed value, but verify types before access
+  Use only the following tools (in positional form):
+  ## 🎯 COMPLETE INPUT/OUTPUT EXAMPLES WITH WRITES FIELD
+  ### **Example 1: Single Flight Search**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Find flight options from Bangalore to NYC",
+    "writes": ["flight_options_T001"],
+    "available_tools": ["fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT:**
+  {
+    "flight_options_T001": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('Bangalore to NYC flights booking', 10)\nreturn {'flight_options_T001': urls}",
+      "CODE_1B": "urls = fetch_search_urls('BLR to JFK flights Emirates Air India', 8)\nreturn {'flight_options_T001': urls}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how `flight_options_T001` appears in:
+  1. JSON key (from "writes" field)
+  2. Return statement (exact same name)
+  3. Both code variants use the SAME variable name
+  ### **Example 2: Multi-Step Hotel Research**
+  **INPUT RECEIVED (First Call):**
+  {
+    "agent_prompt": "Research top 5 hotels in NYC with detailed pricing and amenities",
+    "writes": ["hotel_research_T005"],
+    "available_tools": ["fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT (First Call):**
+  {
+    "hotel_research_T005": [],
+    "call_self": true,
+    "next_instruction": "Extract detailed hotel information from the found URLs including prices, ratings, and amenities",
+    "iteration_context": {
+      "current_step": "search_urls",
+      "next_step": "extract_details",
+      "target_count": 5
+    },
+    "code_variants": {
+      "CODE_1A": "urls = fetch_search_urls('top hotels NYC Manhattan booking prices', 12)\nreturn {'hotel_urls_1A': urls}",
+      "CODE_1B": "results = search_web_with_text_content('best rated hotels New York City amenities', 8)\nreturn {'hotel_research_T005': results}"
+    }
+  }
+  **INPUT RECEIVED (Second Call):**
+  {
+    "agent_prompt": "Extract detailed hotel information from the found URLs including prices, ratings, and amenities",
+    "writes": ["hotel_research_T005"],
+    "available_tools": ["webpage_url_to_raw_text", "webpage_url_to_llm_summary"],
+    "previous_output" { 
+      ...
+      "result": {
+        ....
+        "hotel_urls_1A": ["https://booking.com/hotel1", "https://expedia.com/hotel2", "https://hotels.com/hotel3"]
+        ...
+      }
+      ...
+    }
+  }
+  ## 🚨 IMPORTANT: 
+      1. The variables which have the data needed for next steps are inside the results section of previous_output
+      2. Always use ONLY these variable names in your code to refer to data obtained from previous steps
+  **CORRECT OUTPUT (Second Call):**
+  {
+    "hotel_research_T005": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_2A": "results = []\nfor url in hotel_urls_1A[:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'hotel_research_T005': results}",
+      "CODE_2B": "details = []\nfor url in hotel_urls_1A[:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract hotel name, price, rating, amenities')\n    details.append(info)\nreturn {'hotel_research_T005': details}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how `hotel_research_T005` appears in:
+  1. JSON key (from "writes" field) 
+  2. Return statement (exact same name)
+  3. Both iterations use the SAME final variable name
+  ### **Example 3: Multiple Writes Fields**
+  **INPUT RECEIVED:**
+  {
+    "agent_prompt": "Find startup companies in nuclear fusion and quantum computing sectors",
+    "writes": ["fusion_startups_T010", "quantum_startups_T011"],
+    "available_tools": ["fetch_search_urls", "webpage_url_to_raw_text"]
+  }
+  **CORRECT OUTPUT:**
+  {
+    "fusion_startups_T010": [],
+    "quantum_startups_T011": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_1A": "fusion_urls = fetch_search_urls('nuclear fusion reactor startups companies', 8)\nquantum_urls = fetch_search_urls('quantum computing startups companies', 8)\nreturn {'fusion_startups_T010': fusion_urls, 'quantum_startups_T011': quantum_urls}",
+      "CODE_1B": "fusion_companies = fetch_search_urls('nuclear fusion energy startups 2024', 6)\nquantum_companies = fetch_search_urls('quantum computing AI startups', 6)\nreturn {'fusion_startups_T010': fusion_companies, 'quantum_startups_T011': quantum_companies}"
+    }
+  }
+  **🚨 CRITICAL:** Notice how BOTH write fields appear in:
+  1. JSON keys (from "writes" field)
+  2. Return statement (exact same names)
+  3. Both code variants return BOTH variables
+  ## 🚨 TRIPLE ENFORCEMENT RULE
+  **RULE 1:** Your JSON output MUST contain every key from the "writes" field
+  **RULE 2:** Your code_variants MUST return data using those exact key names  
+  **RULE 3:** The return statement MUST use the exact variable names from "writes"
+  **❌ WRONG EXAMPLES:**
+  Input writes: `["flight_options_T001"]`
+  ```python
+  # ❌ Wrong variable name in return
+  urls = fetch_search_urls('flights', 10)
+  return {'flight_urls_1A': urls}  # Should be 'flight_options_T001'
+  ```python
+  # ❌ Missing writes field in JSON output
+  {
+    "call_self": false,  # Missing "flight_options_T001": []
+    "code_variants": {...}
+  }
+  ❌ **PYTHON CODING RULES:
+  - DO NOT use import statements in generated code
+  - The following modules are already available in the execution environment:
+    * json (use directly: json.loads(), json.dumps(), etc.)
+    * os (use directly: os.path.join(), etc.)
+    * Path (use directly: Path("filename"))
+    * All standard Python builtins (len, str, int, etc.)
+  Example CORRECT code:
+  ```python
+  # ✅ CORRECT - no import needed
+  competitor_vehicles = json.loads(competitor_vehicles_T003[0]['text'])
+  if len(competitor_vehicles) > 1:
+      competitor_2_url = competitor_vehicles[1]['url']
+      competitor_2_content = webpage_url_to_raw_text(competitor_2_url)
+      return {'competitor_2_features_T005': [{'url': competitor_2_url, 'content': competitor_2_content}]}
+  else:
+      return {'competitor_2_features_T005': 'Not enough competitors found'}
+  Example INCORRECT code:
+  ```python
+  # ❌ WRONG - NEVER use import statements
+  import json
+  competitor_vehicles = json.loads(competitor_vehicles_T003[0]['text'])
+  # ... rest of code
+  ### Available Tools
+  - `search_stored_documents_rag(string)` # Search old stored documents like PDF, DOCX, TXT, etc. to get relevant extracts. 
+  - `convert_pdf_to_markdown(string)` # Convert PDF to markdown. 
+  - `caption_images(string)` # 
+  - `search_web_with_text_content(string, integer)` # Search web and return URLs with extracted text content. Gets both URLs and readable text from top search results.
+  - `fetch_search_urls(string, integer)` # Get top website URLs for your search query. Just get's the URL's not the contents
+  - `webpage_url_to_raw_text(string)` # Extract readable text from a webpage
+  - `webpage_url_to_llm_summary(string, any)` # Summarize the webpage using a custom prompt if provided, otherwise fallback to default.
+  {
+    "step_id": "T001",
+    "agent_prompt": "Extract feature details, digital features, safety features, and pricing information from the retrieved URLs.",
+    "reads": [],
+    "writes": [
+      "xuv_3xo_details_raw_T001"
+    ],
+    "inputs": {},
+    "previous_output": {
+      "xuv_3xo_details_raw_T001": [],
+      "call_self": true,
+      "next_instruction": "Extract feature details, digital features, safety features, and pricing information from the retrieved URLs.",
+      "iteration_context": {
+        "current_step": "search_urls",
+        "next_step": "extract_details",
+        "data_type": "Mahindra XUV 3XO feature details"
+      },
+      "code_variants": {
+        "CODE_1A": "urls = fetch_search_urls('Mahindra XUV 3XO features details pricing', 10)\nreturn {'xuv_3xo_details_raw_T001': urls}",
+        "CODE_1B": "urls = fetch_search_urls('Mahindra XUV 3XO digital features safety features', 8)\nreturn {'xuv_3xo_details_raw_T001': urls}"
+      },
+      "cost": 4.1099999999999996e-05,
+      "input_tokens": 75,
+      "output_tokens": 84,
+      "total_tokens": 159,
+      "execution_result": {
+        "status": "success",
+        "result": {
+          "xuv_3xo_details_raw_T001": [
+            "https://auto.mahindra.com/suv/xuv3xo/X3XO.html",
+            "https://www.carwale.com/mahindra-cars/xuv-3xo/",
+            "https://www.carbike360.com/cars/mahindra/xuv-3xo",
+            "https://www.cardekho.com/mahindra/xuv-3xo/specs",
+            "https://www.autocarindia.com/auto-features/mahindra-xuv-3xo-price-variants-features-explained-431425",
+            "https://www.cartrade.com/mahindra-cars/xuv-3xo/",
+            "http://www.india-garage.in/new-cars/mahindra-xuv-3xo.html",
+            "https://www.spinny.com/blog/mahindra-xuv-3xo-price-specifiations-images/",
+            "https://www.smartprix.com/cars/mahindra-xuv-3xo-ppd1j64mf7yr",
+            "https://www.getonroadprice.com/new-cars/mahindra/xuv-3xo"
+          ]
+        },
+        "created_files": [],
+        "execution_time": 18.847985200001858,
+        "error": null,
+        "successful_variant": "CODE_1A",
+        "total_variants_tried": 1,
+        "all_errors": []
+      },
+      "execution_status": "success",
+      "execution_error": null,
+      "execution_time": 18.850419099995634,
+      "executed_variant": "CODE_1A"
+    },
+    "iteration_context": {
+      "current_step": "search_urls",
+      "next_step": "extract_details",
+      "data_type": "Mahindra XUV 3XO feature details"
+    }
+  }
 ================================================================================
 
-2025-07-10 18:22:16,586 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:55,553 - INFO - models:generate_content:6263 - AFC is enabled with max remote calls: 10.
+2025-07-11 14:16:57,502 - INFO - _client:_send_single_request:1740 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-07-11 14:16:57,502 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
-🟢 🔄 Executing agents steps which are ready for execution: ['T002']
-================================================================================
-
-2025-07-10 18:22:16,586 - STEP_BLOCK - log_config:logger_step:98 - 
-================================================================================
-🟢 🔄 Executing step: T002 by calling agent FormatterAgent
-================================================================================
-
-2025-07-10 18:22:16,586 - INFO - flow:_execute_step_self:337 - 🔄 Running agent FormatterAgent for step T002
-2025-07-10 18:22:16,586 - JSON_BLOCK - log_config:logger_json_block:154 - 
-================================================================================
-📌 🔄 Agent Input for step T002
+📌 Output for RetrieverAgent agent for step T001
 ================================================================================
 {
-  "step_id": "T002",
-  "agent_prompt": "Format the output from the countdown timer `execution_result_T001` into a visually appealing markdown card, emphasizing the dark theme and functionality.  Include clear instructions on how to use the generated code and any relevant context.",
-  "reads": [
-    "execution_result_T001"
-  ],
-  "writes": [
-    "formatted_countdown_timer_T002"
-  ],
-  "inputs": {
-    "execution_result_T001": "Countdown timer generated with dark theme."
-  },
-  "all_globals_schema": {
-    "code_step_T001": {
-      "html": {
-        "path": "index.html",
-        "type": "html",
-        "content": "\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Countdown Timer</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <div class=\"timer\" id=\"timer\">5:00</div>\n    <script src=\"script.js\"></script>\n</body>\n</html>\n",
-        "updated_at": "T001"
-      },
-      "css": {
-        "path": "style.css",
-        "type": "css",
-        "content": "\nbody {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n",
-        "updated_at": "T001"
-      },
-      "js": {
-        "path": "script.js",
-        "type": "js",
-        "content": "\nconst timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes < 10 ? \"0\" + minutes : minutes;\n    seconds = seconds < 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft <= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n",
-        "updated_at": "T001"
-      }
-    },
-    "execution_result_T001": "Countdown timer generated with dark theme."
-  },
-  "original_query": "Write an amazingly beautiful html/css/js code to show a times that COUNTS DOWN minutes from 5 to 0. Use dark theme and use a single coder agent step to generate the HTML, JS and CSS files",
-  "session_context": {
-    "session_id": "52151931",
-    "created_at": "2025-07-10T12:52:11.628595",
-    "file_manifest": []
+  "xuv_3xo_details_raw_T001": [],
+  "call_self": false,
+  "code_variants": {
+    "CODE_2A": "results = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'xuv_3xo_details_raw_T001': results}",
+    "CODE_2B": "details = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract feature details, digital features, safety features, and pricing information')\n    details.append(info)\nreturn {'xuv_3xo_details_raw_T001': details}"
   }
 }
 ================================================================================
 
-2025-07-10 18:22:16,586 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:57,503 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
-🟢 🔄🔄🔄 Running FormatterAgent agent for step T002 🔄🔄🔄
-================================================================================
-
-2025-07-10 18:22:16,586 - INFO - agents:run_agent:53 - 🔄🔄🔄 Running FormatterAgent agent for step T002 🔄🔄🔄
-2025-07-10 18:22:16,955 - INFO - models:generate_content:6263 - AFC is enabled with max remote calls: 10.
-2025-07-10 18:22:31,277 - INFO - _client:_send_single_request:1740 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
-2025-07-10 18:22:31,287 - JSON_BLOCK - log_config:logger_json_block:154 - 
-================================================================================
-📌 🔄 Agent Output for step T002
+📌 Agent Output for step T001 - iteration 2/10
 ================================================================================
 {
   "success": true,
-  "agent_type": "FormatterAgent",
+  "agent_type": "RetrieverAgent",
   "output": {
-    "final_format": "html",
-    "fallback_markdown": "Comprehensive HTML report for the countdown timer.",
-    "reasoning": "Generated a detailed HTML report including an executive summary, code previews, usage instructions, customization options, and potential improvements, leveraging all available data from all_globals_schema.",
-    "formatted_countdown_timer_T002": "<div class='report'>\n  <h1>\ud83d\udcca Countdown Timer Analysis Report</h1>\n\n  <div class='executive-summary'>\n    <h2>\ud83c\udfaf Executive Summary</h2>\n    <p>This report provides a comprehensive analysis of the generated countdown timer, detailing its functionality, code structure, and potential customization options. The timer is designed with a dark theme, enhancing its visual appeal. Key aspects include the HTML structure, CSS styling, and JavaScript logic that drive the timer's countdown functionality.</p>\n    <p><b>Key Highlights:</b></p>\n    <ul>\n      <li>Functioning countdown timer with a dark theme.</li>\n      <li>Clear separation of HTML, CSS, and JavaScript.</li>\n      <li>Easy-to-understand code structure for customization.</li>\n    </ul>\n  </div>\n\n  <h2>\ud83d\udd0d Code Structure Overview</h2>\n  <p>The countdown timer is built using three main components: HTML, CSS, and JavaScript. Each component plays a crucial role in the timer's appearance and functionality.</p>\n\n  <h3>\ud83d\udcdc HTML Structure (index.html)</h3>\n  <pre><code class='language-html'>&lt;!DOCTYPE html&gt;\n&lt;html lang=\"en\"&gt;\n&lt;head&gt;\n    &lt;meta charset=\"UTF-8\"&gt;\n    &lt;meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"&gt;\n    &lt;title&gt;Countdown Timer&lt;/title&gt;\n    &lt;link rel=\"stylesheet\" href=\"style.css\"&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;div class=\"timer\" id=\"timer\"&gt;5:00&lt;/div&gt;\n    &lt;script src=\"script.js\"&gt;&lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>\n  <p>The HTML file sets up the basic structure of the timer. It includes a div with the class 'timer' and id 'timer', which displays the countdown. The CSS file (style.css) is linked in the head to style the timer, and the JavaScript file (script.js) is linked at the end of the body to handle the timer's functionality.</p>\n\n  <h3>\ud83c\udfa8 CSS Styling (style.css)</h3>\n  <pre><code class='language-css'>body {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n</code></pre>\n  <p>The CSS file styles the timer with a dark background (#222) and white text. It uses flexbox to center the timer on the screen. The timer itself has a bold font, padding, a white border, and rounded corners.</p>\n\n  <h3>\ud83e\udde0 JavaScript Logic (script.js)</h3>\n  <pre><code class='language-javascript'>const timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes &lt; 10 ? \"0\" + minutes : minutes;\n    seconds = seconds &lt; 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft &lt;= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n</code></pre>\n  <p>The JavaScript file contains the logic for the countdown timer. It initializes the timer with 5 minutes (300 seconds). The <code>updateTimer</code> function calculates the minutes and seconds remaining, formats them with leading zeros if necessary, and updates the timer display. If the timer reaches 0, it displays \"Time's up!\" and stops the countdown. The <code>setInterval</code> function calls <code>updateTimer</code> every 1000 milliseconds (1 second).</p>\n\n  <h2>\ud83d\udee0\ufe0f Usage Instructions</h2>\n  <ol>\n    <li>Save the HTML content as <code>index.html</code>.</li>\n    <li>Save the CSS content as <code>style.css</code>.</li>\n    <li>Save the JavaScript content as <code>script.js</code>.</li>\n    <li>Ensure all three files are in the same directory.</li>\n    <li>Open <code>index.html</code> in a web browser to view the countdown timer.</li>\n  </ol>\n\n  <h2>\ud83c\udfa8 Customization Options</h2>\n  <ul>\n    <li><b>Timer Duration:</b> Modify the <code>timeLeft</code> variable in <code>script.js</code> to change the initial countdown time. For example, to set the timer to 10 minutes, change <code>let timeLeft = 300;</code> to <code>let timeLeft = 600;</code>.</li>\n    <li><b>Styling:</b> Customize the appearance of the timer by modifying the CSS in <code>style.css</code>. You can change the background color, text color, font, border, and other visual properties.</li>\n    <li><b>Alert Message:</b> Change the message displayed when the timer reaches 0 by modifying the <code>timerDisplay.textContent = \"Time's up!\";</code> line in <code>script.js</code>.</li>\n  </ul>\n\n  <h2>\ud83d\udca1 Potential Improvements</h2>\n  <ul>\n    <li><b>User Input:</b> Add input fields to allow users to set the countdown time dynamically.</li>\n    <li><b>Start/Stop Button:</b> Implement start and stop buttons to control the timer.</li>\n    <li><b>Notifications:</b> Integrate browser notifications to alert users when the timer reaches 0.</li>\n    <li><b>Audio Alerts:</b> Add an audio alert when the timer finishes.</li>\n    <li><b>Responsive Design:</b> Improve the responsiveness of the timer for different screen sizes.</li>\n  </ul>\n\n  <h2>\u26a0\ufe0f Risk Factors and Uncertainties</h2>\n  <p>The functionality of the countdown timer relies on JavaScript being enabled in the user's browser. If JavaScript is disabled, the timer will not function as expected. Additionally, inconsistencies in browser rendering engines could lead to minor visual differences across different browsers. The timer's accuracy depends on the system clock of the user's device, which may be subject to drift over time. To mitigate these risks, ensure that the JavaScript code is robust and thoroughly tested across various browsers and devices.</p>\n\n  <h2>\ud83d\udd75\ufe0f Hidden Signals and Meta Observations</h2>\n  <p>The simplicity of the code indicates a focus on ease of understanding and modification. The use of a dark theme suggests an aesthetic preference for modern, minimalist designs. The potential improvements listed highlight opportunities for enhancing the timer's functionality and user experience. The initial countdown time of 5 minutes may be suitable for various applications, such as short tasks, breaks, or training exercises.</p>\n\n  <h2>Final Highlights and Recommendations</h2>\n  <p>The countdown timer provides a functional and visually appealing solution for time management and task tracking. Its modular design and clear code structure make it easy to customize and extend. By implementing the suggested improvements, the timer can be further enhanced to meet specific user needs. Overall, the timer represents a valuable tool for improving productivity and efficiency.</p>\n\n</div>",
+    "xuv_3xo_details_raw_T001": [],
     "call_self": false,
-    "cost": 0.0005553000000000001,
-    "input_tokens": 381,
-    "output_tokens": 1293,
-    "total_tokens": 1674
+    "code_variants": {
+      "CODE_2A": "results = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'xuv_3xo_details_raw_T001': results}",
+      "CODE_2B": "details = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract feature details, digital features, safety features, and pricing information')\n    details.append(info)\nreturn {'xuv_3xo_details_raw_T001': details}"
+    },
+    "cost": 4.6500000000000005e-05,
+    "input_tokens": 201,
+    "output_tokens": 66,
+    "total_tokens": 267
   }
 }
 ================================================================================
 
-2025-07-10 18:22:31,287 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:57,503 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
-🟢 🔄 No code execution for step: T002, assigning result to output
-================================================================================
-
-2025-07-10 18:22:31,287 - STEP_BLOCK - log_config:logger_step:98 - 
-================================================================================
-🟢 🔄 Agent FormatterAgent for step T002 - call_self: False
+🟢 🔄 Need to execute code for step: T001 - iteration 2/10
 ================================================================================
 
-2025-07-10 18:22:31,287 - STEP_BLOCK - log_config:logger_step:98 - 
+2025-07-11 14:16:57,503 - STEP_BLOCK - log_config:logger_step:98 - 
 ================================================================================
-🟢 ✅ Step T002 completed successfully
-================================================================================
-
-2025-07-10 18:22:31,287 - STEP_BLOCK - log_config:logger_step:98 - 
-================================================================================
-🟢 🔄 Executing agents steps which are ready for execution: ['T002'] - Completed
+🟢 🔄 Executing code for step: T001 - Self iteration: 1
 ================================================================================
 
-2025-07-10 18:22:31,287 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:57,503 - ERROR - log_config:logger_code_block:223 - Failed to format code block: 'dict' object has no attribute 'split'
+2025-07-11 14:16:57,503 - INFO - log_config:logger_code_block:224 - Code to execute:: {'CODE_2A': "results = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'xuv_3xo_details_raw_T001': results}", 'CODE_2B': "details = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract feature details, digital features, safety features, and pricing information')\n    details.append(info)\nreturn {'xuv_3xo_details_raw_T001': details}"}
+2025-07-11 14:16:57,503 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
-📌 🔄 Results of executing agents steps which are ready for execution: ['T002']
+📌 Code to execute for step T001 - Self iteration: 1
+================================================================================
+{
+  "CODE_2A": "results = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'xuv_3xo_details_raw_T001': results}",
+  "CODE_2B": "details = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract feature details, digital features, safety features, and pricing information')\n    details.append(info)\nreturn {'xuv_3xo_details_raw_T001': details}"
+}
+================================================================================
+
+2025-07-11 14:16:57,503 - JSON_BLOCK - log_config:logger_json_block:154 - 
+================================================================================
+📌 Step: T001 - Globals schema:
+================================================================================
+{
+  "xuv_3xo_details_raw_T001": [
+    "https://auto.mahindra.com/suv/xuv3xo/X3XO.html",
+    "https://www.carwale.com/mahindra-cars/xuv-3xo/",
+    "https://www.carbike360.com/cars/mahindra/xuv-3xo",
+    "https://www.cardekho.com/mahindra/xuv-3xo/specs",
+    "https://www.autocarindia.com/auto-features/mahindra-xuv-3xo-price-variants-features-explained-431425",
+    "https://www.cartrade.com/mahindra-cars/xuv-3xo/",
+    "http://www.india-garage.in/new-cars/mahindra-xuv-3xo.html",
+    "https://www.spinny.com/blog/mahindra-xuv-3xo-price-specifiations-images/",
+    "https://www.smartprix.com/cars/mahindra-xuv-3xo-ppd1j64mf7yr",
+    "https://www.getonroadprice.com/new-cars/mahindra/xuv-3xo"
+  ]
+}
+================================================================================
+
+2025-07-11 14:16:57,503 - JSON_BLOCK - log_config:logger_json_block:154 - 
+================================================================================
+📌 Step: T001 - Reads:
+================================================================================
+[]
+================================================================================
+
+2025-07-11 14:16:57,503 - JSON_BLOCK - log_config:logger_json_block:154 - 
+================================================================================
+📌 Step: T001 - Node data:
+================================================================================
+{
+  "id": "T001",
+  "description": "Retrieve feature details of Mahindra XUV 3XO from multiple URLs.",
+  "agent": "RetrieverAgent",
+  "agent_prompt": "Find and extract feature details, digital features, safety features, and pricing information for the Mahindra XUV 3XO from multiple reputable URLs. Perform multi-step search and retrieval to gather the desired content. Focus on official Mahindra sources and reliable automotive news websites.",
+  "reads": [],
+  "writes": [
+    "xuv_3xo_details_raw_T001"
+  ],
+  "status": "running",
+  "output": null,
+  "error": null,
+  "cost": 0.0,
+  "start_time": "2025-07-11T08:46:22.277559",
+  "end_time": null,
+  "execution_time": 0.0
+}
+================================================================================
+
+2025-07-11 14:16:57,503 - INFO - contextManager:_auto_execute_code:146 - 🔄 Executing code for step: T001 - Code key: CODE_2A
+2025-07-11 14:16:57,503 - WARNING - contextManager:_auto_execute_code:158 - ⚠️ Variable name conflict detected: 'xuv_3xo_details_raw_T001' already exists in globals_schema. Using agent output value.
+2025-07-11 14:16:57,503 - INFO - contextManager:_auto_execute_code:159 - We will not overvwritte the value of globals_schema with agent output value
+2025-07-11 14:16:57,512 - WARNING - executor:run_user_code:304 - 🐍 Code execution failed for step T001 - iteration 1 - session 52223582 - error: All code variants failed. Errors: CODE_2A: NameError: name 'previous_output' is not defined
+2025-07-11 14:16:57,513 - CODE_BLOCK - log_config:logger_code_block:221 - 
+================================================================================
+📝 Step: T001 - Code executed - Results:
+================================================================================
+🔧 Code:
+================================================================================
+  xuv_3xo_details_raw_T001 = ['https://auto.mahindra.com/suv/xuv3xo/X3XO.html', 'https://www.carwale.com/mahindra-cars/xuv-3xo/', 'https://www.carbike360.com/cars/mahindra/xuv-3xo', 'https://www.cardekho.com/mahindra/xuv-3xo/specs', 'https://www.autocarindia.com/auto-features/mahindra-xuv-3xo-price-variants-features-explained-431425', 'https://www.cartrade.com/mahindra-cars/xuv-3xo/', 'http://www.india-garage.in/new-cars/mahindra-xuv-3xo.html', 'https://www.spinny.com/blog/mahindra-xuv-3xo-price-specifiations-images/', 'https://www.smartprix.com/cars/mahindra-xuv-3xo-ppd1j64mf7yr', 'https://www.getonroadprice.com/new-cars/mahindra/xuv-3xo']
+  total_tokens = 267
+  reads_data = {}
+  results = []
+  for url in previous_output['result']['xuv_3xo_details_raw_T001'][:5]:
+      content = webpage_url_to_raw_text(url)
+      results.append({'url': url, 'content': content})
+  return {'xuv_3xo_details_raw_T001': results}
+
+================================================================================
+📊 Output:
+================================================================================
+  {
+    "code_results": {
+      "all_errors": [
+        "CODE_2A: NameError: name 'previous_output' is not defined"
+      ],
+      "created_files": [],
+      "error": "All code variants failed. Errors: CODE_2A: NameError: name 'previous_output' is not defined",
+      "execution_time": 0.0077822000021114945,
+      "failed_variants": 1,
+      "result": {},
+      "status": "failed"
+    },
+    "created_files": [],
+    "error": "Code execution failed: All code variants failed. Errors: CODE_2A: NameError: name 'previous_output' is not defined",
+    "file_results": {},
+    "operations": [
+      "python_code"
+    ],
+    "session_id": "52223582",
+    "status": "partial_failure",
+    "total_time": 0.00883180001983419
+  }
+================================================================================
+
+2025-07-11 14:16:57,513 - INFO - contextManager:_auto_execute_code:146 - 🔄 Executing code for step: T001 - Code key: CODE_2B
+2025-07-11 14:16:57,513 - WARNING - contextManager:_auto_execute_code:158 - ⚠️ Variable name conflict detected: 'xuv_3xo_details_raw_T001' already exists in globals_schema. Using agent output value.
+2025-07-11 14:16:57,513 - INFO - contextManager:_auto_execute_code:159 - We will not overvwritte the value of globals_schema with agent output value
+2025-07-11 14:16:57,516 - WARNING - executor:run_user_code:304 - 🐍 Code execution failed for step T001 - iteration 1 - session 52223582 - error: All code variants failed. Errors: CODE_2B: NameError: name 'previous_output' is not defined
+2025-07-11 14:16:57,517 - CODE_BLOCK - log_config:logger_code_block:221 - 
+================================================================================
+📝 Step: T001 - Code executed - Results:
+================================================================================
+🔧 Code:
+================================================================================
+  xuv_3xo_details_raw_T001 = ['https://auto.mahindra.com/suv/xuv3xo/X3XO.html', 'https://www.carwale.com/mahindra-cars/xuv-3xo/', 'https://www.carbike360.com/cars/mahindra/xuv-3xo', 'https://www.cardekho.com/mahindra/xuv-3xo/specs', 'https://www.autocarindia.com/auto-features/mahindra-xuv-3xo-price-variants-features-explained-431425', 'https://www.cartrade.com/mahindra-cars/xuv-3xo/', 'http://www.india-garage.in/new-cars/mahindra-xuv-3xo.html', 'https://www.spinny.com/blog/mahindra-xuv-3xo-price-specifiations-images/', 'https://www.smartprix.com/cars/mahindra-xuv-3xo-ppd1j64mf7yr', 'https://www.getonroadprice.com/new-cars/mahindra/xuv-3xo']
+  total_tokens = 267
+  reads_data = {}
+  details = []
+  for url in previous_output['result']['xuv_3xo_details_raw_T001'][:3]:
+      info = webpage_url_to_llm_summary(url, 'Extract feature details, digital features, safety features, and pricing information')
+      details.append(info)
+  return {'xuv_3xo_details_raw_T001': details}
+
+================================================================================
+📊 Output:
+================================================================================
+  {
+    "code_results": {
+      "all_errors": [
+        "CODE_2B: NameError: name 'previous_output' is not defined"
+      ],
+      "created_files": [],
+      "error": "All code variants failed. Errors: CODE_2B: NameError: name 'previous_output' is not defined",
+      "execution_time": 0.0024179999891202897,
+      "failed_variants": 1,
+      "result": {},
+      "status": "failed"
+    },
+    "created_files": [],
+    "error": "Code execution failed: All code variants failed. Errors: CODE_2B: NameError: name 'previous_output' is not defined",
+    "file_results": {},
+    "operations": [
+      "python_code"
+    ],
+    "session_id": "52223582",
+    "status": "partial_failure",
+    "total_time": 0.0036641999904531986
+  }
+================================================================================
+
+2025-07-11 14:16:57,518 - JSON_BLOCK - log_config:logger_json_block:154 - 
+================================================================================
+📌 🔄 Execution result for step T001 - iteration 2/10
+================================================================================
+{
+  "status": "error",
+  "error": "All code variants failed"
+}
+================================================================================
+
+2025-07-11 14:16:57,518 - INFO - flow:_execute_step_self:432 - ❌ Execution failed for step T001 - iteration 2/10: {'status': 'error', 'error': 'All code variants failed'}
+2025-07-11 14:16:57,518 - STEP_BLOCK - log_config:logger_step:98 - 
+================================================================================
+🟢 ✅ Step T001 completed successfully
+================================================================================
+
+2025-07-11 14:16:57,519 - STEP_BLOCK - log_config:logger_step:98 - 
+================================================================================
+🟢 🔄 Executing agents steps which are ready for execution: ['T001'] - Completed
+================================================================================
+
+2025-07-11 14:16:57,519 - JSON_BLOCK - log_config:logger_json_block:154 - 
+================================================================================
+📌 🔄 Results of executing agents steps which are ready for execution: ['T001']
 ================================================================================
 [
   {
-    "success": true,
-    "agent_type": "FormatterAgent",
-    "output": {
-      "final_format": "html",
-      "fallback_markdown": "Comprehensive HTML report for the countdown timer.",
-      "reasoning": "Generated a detailed HTML report including an executive summary, code previews, usage instructions, customization options, and potential improvements, leveraging all available data from all_globals_schema.",
-      "formatted_countdown_timer_T002": "<div class='report'>\n  <h1>\ud83d\udcca Countdown Timer Analysis Report</h1>\n\n  <div class='executive-summary'>\n    <h2>\ud83c\udfaf Executive Summary</h2>\n    <p>This report provides a comprehensive analysis of the generated countdown timer, detailing its functionality, code structure, and potential customization options. The timer is designed with a dark theme, enhancing its visual appeal. Key aspects include the HTML structure, CSS styling, and JavaScript logic that drive the timer's countdown functionality.</p>\n    <p><b>Key Highlights:</b></p>\n    <ul>\n      <li>Functioning countdown timer with a dark theme.</li>\n      <li>Clear separation of HTML, CSS, and JavaScript.</li>\n      <li>Easy-to-understand code structure for customization.</li>\n    </ul>\n  </div>\n\n  <h2>\ud83d\udd0d Code Structure Overview</h2>\n  <p>The countdown timer is built using three main components: HTML, CSS, and JavaScript. Each component plays a crucial role in the timer's appearance and functionality.</p>\n\n  <h3>\ud83d\udcdc HTML Structure (index.html)</h3>\n  <pre><code class='language-html'>&lt;!DOCTYPE html&gt;\n&lt;html lang=\"en\"&gt;\n&lt;head&gt;\n    &lt;meta charset=\"UTF-8\"&gt;\n    &lt;meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"&gt;\n    &lt;title&gt;Countdown Timer&lt;/title&gt;\n    &lt;link rel=\"stylesheet\" href=\"style.css\"&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;div class=\"timer\" id=\"timer\"&gt;5:00&lt;/div&gt;\n    &lt;script src=\"script.js\"&gt;&lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>\n  <p>The HTML file sets up the basic structure of the timer. It includes a div with the class 'timer' and id 'timer', which displays the countdown. The CSS file (style.css) is linked in the head to style the timer, and the JavaScript file (script.js) is linked at the end of the body to handle the timer's functionality.</p>\n\n  <h3>\ud83c\udfa8 CSS Styling (style.css)</h3>\n  <pre><code class='language-css'>body {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n</code></pre>\n  <p>The CSS file styles the timer with a dark background (#222) and white text. It uses flexbox to center the timer on the screen. The timer itself has a bold font, padding, a white border, and rounded corners.</p>\n\n  <h3>\ud83e\udde0 JavaScript Logic (script.js)</h3>\n  <pre><code class='language-javascript'>const timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes &lt; 10 ? \"0\" + minutes : minutes;\n    seconds = seconds &lt; 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft &lt;= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n</code></pre>\n  <p>The JavaScript file contains the logic for the countdown timer. It initializes the timer with 5 minutes (300 seconds). The <code>updateTimer</code> function calculates the minutes and seconds remaining, formats them with leading zeros if necessary, and updates the timer display. If the timer reaches 0, it displays \"Time's up!\" and stops the countdown. The <code>setInterval</code> function calls <code>updateTimer</code> every 1000 milliseconds (1 second).</p>\n\n  <h2>\ud83d\udee0\ufe0f Usage Instructions</h2>\n  <ol>\n    <li>Save the HTML content as <code>index.html</code>.</li>\n    <li>Save the CSS content as <code>style.css</code>.</li>\n    <li>Save the JavaScript content as <code>script.js</code>.</li>\n    <li>Ensure all three files are in the same directory.</li>\n    <li>Open <code>index.html</code> in a web browser to view the countdown timer.</li>\n  </ol>\n\n  <h2>\ud83c\udfa8 Customization Options</h2>\n  <ul>\n    <li><b>Timer Duration:</b> Modify the <code>timeLeft</code> variable in <code>script.js</code> to change the initial countdown time. For example, to set the timer to 10 minutes, change <code>let timeLeft = 300;</code> to <code>let timeLeft = 600;</code>.</li>\n    <li><b>Styling:</b> Customize the appearance of the timer by modifying the CSS in <code>style.css</code>. You can change the background color, text color, font, border, and other visual properties.</li>\n    <li><b>Alert Message:</b> Change the message displayed when the timer reaches 0 by modifying the <code>timerDisplay.textContent = \"Time's up!\";</code> line in <code>script.js</code>.</li>\n  </ul>\n\n  <h2>\ud83d\udca1 Potential Improvements</h2>\n  <ul>\n    <li><b>User Input:</b> Add input fields to allow users to set the countdown time dynamically.</li>\n    <li><b>Start/Stop Button:</b> Implement start and stop buttons to control the timer.</li>\n    <li><b>Notifications:</b> Integrate browser notifications to alert users when the timer reaches 0.</li>\n    <li><b>Audio Alerts:</b> Add an audio alert when the timer finishes.</li>\n    <li><b>Responsive Design:</b> Improve the responsiveness of the timer for different screen sizes.</li>\n  </ul>\n\n  <h2>\u26a0\ufe0f Risk Factors and Uncertainties</h2>\n  <p>The functionality of the countdown timer relies on JavaScript being enabled in the user's browser. If JavaScript is disabled, the timer will not function as expected. Additionally, inconsistencies in browser rendering engines could lead to minor visual differences across different browsers. The timer's accuracy depends on the system clock of the user's device, which may be subject to drift over time. To mitigate these risks, ensure that the JavaScript code is robust and thoroughly tested across various browsers and devices.</p>\n\n  <h2>\ud83d\udd75\ufe0f Hidden Signals and Meta Observations</h2>\n  <p>The simplicity of the code indicates a focus on ease of understanding and modification. The use of a dark theme suggests an aesthetic preference for modern, minimalist designs. The potential improvements listed highlight opportunities for enhancing the timer's functionality and user experience. The initial countdown time of 5 minutes may be suitable for various applications, such as short tasks, breaks, or training exercises.</p>\n\n  <h2>Final Highlights and Recommendations</h2>\n  <p>The countdown timer provides a functional and visually appealing solution for time management and task tracking. Its modular design and clear code structure make it easy to customize and extend. By implementing the suggested improvements, the timer can be further enhanced to meet specific user needs. Overall, the timer represents a valuable tool for improving productivity and efficiency.</p>\n\n</div>",
-      "call_self": false,
-      "cost": 0.0005553000000000001,
-      "input_tokens": 381,
-      "output_tokens": 1293,
-      "total_tokens": 1674
-    }
+    "xuv_3xo_details_raw_T001": [],
+    "call_self": false,
+    "code_variants": {
+      "CODE_2A": "results = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'xuv_3xo_details_raw_T001': results}",
+      "CODE_2B": "details = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract feature details, digital features, safety features, and pricing information')\n    details.append(info)\nreturn {'xuv_3xo_details_raw_T001': details}"
+    },
+    "cost": 4.6500000000000005e-05,
+    "input_tokens": 201,
+    "output_tokens": 66,
+    "total_tokens": 267
   }
 ]
 ================================================================================
 
-2025-07-10 18:22:31,288 - JSON_BLOCK - log_config:logger_json_block:154 - 
+2025-07-11 14:16:57,519 - JSON_BLOCK - log_config:logger_json_block:154 - 
 ================================================================================
-📌 🔄 Processing Result for step T002
+📌 🔄 Processing Result for step T001
 ================================================================================
 {
-  "success": true,
-  "agent_type": "FormatterAgent",
-  "output": {
-    "final_format": "html",
-    "fallback_markdown": "Comprehensive HTML report for the countdown timer.",
-    "reasoning": "Generated a detailed HTML report including an executive summary, code previews, usage instructions, customization options, and potential improvements, leveraging all available data from all_globals_schema.",
-    "formatted_countdown_timer_T002": "<div class='report'>\n  <h1>\ud83d\udcca Countdown Timer Analysis Report</h1>\n\n  <div class='executive-summary'>\n    <h2>\ud83c\udfaf Executive Summary</h2>\n    <p>This report provides a comprehensive analysis of the generated countdown timer, detailing its functionality, code structure, and potential customization options. The timer is designed with a dark theme, enhancing its visual appeal. Key aspects include the HTML structure, CSS styling, and JavaScript logic that drive the timer's countdown functionality.</p>\n    <p><b>Key Highlights:</b></p>\n    <ul>\n      <li>Functioning countdown timer with a dark theme.</li>\n      <li>Clear separation of HTML, CSS, and JavaScript.</li>\n      <li>Easy-to-understand code structure for customization.</li>\n    </ul>\n  </div>\n\n  <h2>\ud83d\udd0d Code Structure Overview</h2>\n  <p>The countdown timer is built using three main components: HTML, CSS, and JavaScript. Each component plays a crucial role in the timer's appearance and functionality.</p>\n\n  <h3>\ud83d\udcdc HTML Structure (index.html)</h3>\n  <pre><code class='language-html'>&lt;!DOCTYPE html&gt;\n&lt;html lang=\"en\"&gt;\n&lt;head&gt;\n    &lt;meta charset=\"UTF-8\"&gt;\n    &lt;meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"&gt;\n    &lt;title&gt;Countdown Timer&lt;/title&gt;\n    &lt;link rel=\"stylesheet\" href=\"style.css\"&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;div class=\"timer\" id=\"timer\"&gt;5:00&lt;/div&gt;\n    &lt;script src=\"script.js\"&gt;&lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>\n  <p>The HTML file sets up the basic structure of the timer. It includes a div with the class 'timer' and id 'timer', which displays the countdown. The CSS file (style.css) is linked in the head to style the timer, and the JavaScript file (script.js) is linked at the end of the body to handle the timer's functionality.</p>\n\n  <h3>\ud83c\udfa8 CSS Styling (style.css)</h3>\n  <pre><code class='language-css'>body {\n    background-color: #222;\n    color: #fff;\n    font-family: sans-serif;\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 100vh;\n    margin: 0;\n}\n\n.timer {\n    font-size: 5rem;\n    font-weight: bold;\n    padding: 20px;\n    border: 5px solid #fff;\n    border-radius: 10px;\n}\n</code></pre>\n  <p>The CSS file styles the timer with a dark background (#222) and white text. It uses flexbox to center the timer on the screen. The timer itself has a bold font, padding, a white border, and rounded corners.</p>\n\n  <h3>\ud83e\udde0 JavaScript Logic (script.js)</h3>\n  <pre><code class='language-javascript'>const timerDisplay = document.getElementById('timer');\nlet timeLeft = 300; // 5 minutes in seconds\n\nfunction updateTimer() {\n    let minutes = Math.floor(timeLeft / 60);\n    let seconds = timeLeft % 60;\n\n    minutes = minutes &lt; 10 ? \"0\" + minutes : minutes;\n    seconds = seconds &lt; 10 ? \"0\" + seconds : seconds;\n\n    timerDisplay.textContent = `${minutes}:${seconds}`;\n\n    if (timeLeft &lt;= 0) {\n        clearInterval(timerInterval);\n        timerDisplay.textContent = \"Time's up!\";\n    } else {\n        timeLeft--;\n    }\n}\n\nupdateTimer(); // Initial call to display the timer immediately\nconst timerInterval = setInterval(updateTimer, 1000);\n</code></pre>\n  <p>The JavaScript file contains the logic for the countdown timer. It initializes the timer with 5 minutes (300 seconds). The <code>updateTimer</code> function calculates the minutes and seconds remaining, formats them with leading zeros if necessary, and updates the timer display. If the timer reaches 0, it displays \"Time's up!\" and stops the countdown. The <code>setInterval</code> function calls <code>updateTimer</code> every 1000 milliseconds (1 second).</p>\n\n  <h2>\ud83d\udee0\ufe0f Usage Instructions</h2>\n  <ol>\n    <li>Save the HTML content as <code>index.html</code>.</li>\n    <li>Save the CSS content as <code>style.css</code>.</li>\n    <li>Save the JavaScript content as <code>script.js</code>.</li>\n    <li>Ensure all three files are in the same directory.</li>\n    <li>Open <code>index.html</code> in a web browser to view the countdown timer.</li>\n  </ol>\n\n  <h2>\ud83c\udfa8 Customization Options</h2>\n  <ul>\n    <li><b>Timer Duration:</b> Modify the <code>timeLeft</code> variable in <code>script.js</code> to change the initial countdown time. For example, to set the timer to 10 minutes, change <code>let timeLeft = 300;</code> to <code>let timeLeft = 600;</code>.</li>\n    <li><b>Styling:</b> Customize the appearance of the timer by modifying the CSS in <code>style.css</code>. You can change the background color, text color, font, border, and other visual properties.</li>\n    <li><b>Alert Message:</b> Change the message displayed when the timer reaches 0 by modifying the <code>timerDisplay.textContent = \"Time's up!\";</code> line in <code>script.js</code>.</li>\n  </ul>\n\n  <h2>\ud83d\udca1 Potential Improvements</h2>\n  <ul>\n    <li><b>User Input:</b> Add input fields to allow users to set the countdown time dynamically.</li>\n    <li><b>Start/Stop Button:</b> Implement start and stop buttons to control the timer.</li>\n    <li><b>Notifications:</b> Integrate browser notifications to alert users when the timer reaches 0.</li>\n    <li><b>Audio Alerts:</b> Add an audio alert when the timer finishes.</li>\n    <li><b>Responsive Design:</b> Improve the responsiveness of the timer for different screen sizes.</li>\n  </ul>\n\n  <h2>\u26a0\ufe0f Risk Factors and Uncertainties</h2>\n  <p>The functionality of the countdown timer relies on JavaScript being enabled in the user's browser. If JavaScript is disabled, the timer will not function as expected. Additionally, inconsistencies in browser rendering engines could lead to minor visual differences across different browsers. The timer's accuracy depends on the system clock of the user's device, which may be subject to drift over time. To mitigate these risks, ensure that the JavaScript code is robust and thoroughly tested across various browsers and devices.</p>\n\n  <h2>\ud83d\udd75\ufe0f Hidden Signals and Meta Observations</h2>\n  <p>The simplicity of the code indicates a focus on ease of understanding and modification. The use of a dark theme suggests an aesthetic preference for modern, minimalist designs. The potential improvements listed highlight opportunities for enhancing the timer's functionality and user experience. The initial countdown time of 5 minutes may be suitable for various applications, such as short tasks, breaks, or training exercises.</p>\n\n  <h2>Final Highlights and Recommendations</h2>\n  <p>The countdown timer provides a functional and visually appealing solution for time management and task tracking. Its modular design and clear code structure make it easy to customize and extend. By implementing the suggested improvements, the timer can be further enhanced to meet specific user needs. Overall, the timer represents a valuable tool for improving productivity and efficiency.</p>\n\n</div>",
-    "call_self": false,
-    "cost": 0.0005553000000000001,
-    "input_tokens": 381,
-    "output_tokens": 1293,
-    "total_tokens": 1674
-  }
+  "xuv_3xo_details_raw_T001": [],
+  "call_self": false,
+  "code_variants": {
+    "CODE_2A": "results = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'xuv_3xo_details_raw_T001': results}",
+    "CODE_2B": "details = []\nfor url in previous_output['result']['xuv_3xo_details_raw_T001'][:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract feature details, digital features, safety features, and pricing information')\n    details.append(info)\nreturn {'xuv_3xo_details_raw_T001': details}"
+  },
+  "cost": 4.6500000000000005e-05,
+  "input_tokens": 201,
+  "output_tokens": 66,
+  "total_tokens": 267
 }
-================================================================================
-
-2025-07-10 18:22:31,288 - INFO - flow:_execute_dag:175 - ✅ Marking step T002 as completed
-2025-07-10 18:22:31,288 - INFO - contextManager:mark_done:359 - 🔄 Marked done: Extracting formatted_countdown_timer_T002
-2025-07-10 18:22:31,288 - INFO - contextManager:mark_done:383 - 🔄 Marked done: Extracting formatted_countdown_timer_T002 = <div class='report'>
-  <h1>📊 Countdown Timer Analysis Report</h1>
-
-  <div class='executive-summary'>
-    <h2>🎯 Executive Summary</h2>
-    <p>This report provides a comprehensive analysis of the generated countdown timer, detailing its functionality, code structure, and potential customization options. The timer is designed with a dark theme, enhancing its visual appeal. Key aspects include the HTML structure, CSS styling, and JavaScript logic that drive the timer's countdown functionality.</p>
-    <p><b>Key Highlights:</b></p>
-    <ul>
-      <li>Functioning countdown timer with a dark theme.</li>
-      <li>Clear separation of HTML, CSS, and JavaScript.</li>
-      <li>Easy-to-understand code structure for customization.</li>
-    </ul>
-  </div>
-
-  <h2>🔍 Code Structure Overview</h2>
-  <p>The countdown timer is built using three main components: HTML, CSS, and JavaScript. Each component plays a crucial role in the timer's appearance and functionality.</p>
-
-  <h3>📜 HTML Structure (index.html)</h3>
-  <pre><code class='language-html'>&lt;!DOCTYPE html&gt;
-&lt;html lang="en"&gt;
-&lt;head&gt;
-    &lt;meta charset="UTF-8"&gt;
-    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
-    &lt;title&gt;Countdown Timer&lt;/title&gt;
-    &lt;link rel="stylesheet" href="style.css"&gt;
-&lt;/head&gt;
-&lt;body&gt;
-    &lt;div class="timer" id="timer"&gt;5:00&lt;/div&gt;
-    &lt;script src="script.js"&gt;&lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;</code></pre>
-  <p>The HTML file sets up the basic structure of the timer. It includes a div with the class 'timer' and id 'timer', which displays the countdown. The CSS file (style.css) is linked in the head to style the timer, and the JavaScript file (script.js) is linked at the end of the body to handle the timer's functionality.</p>
-
-  <h3>🎨 CSS Styling (style.css)</h3>
-  <pre><code class='language-css'>body {
-    background-color: #222;
-    color: #fff;
-    font-family: sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-}
-
-.timer {
-    font-size: 5rem;
-    font-weight: bold;
-    padding: 20px;
-    border: 5px solid #fff;
-    border-radius: 10px;
-}
-</code></pre>
-  <p>The CSS file styles the timer with a dark background (#222) and white text. It uses flexbox to center the timer on the screen. The timer itself has a bold font, padding, a white border, and rounded corners.</p>
-
-  <h3>🧠 JavaScript Logic (script.js)</h3>
-  <pre><code class='language-javascript'>const timerDisplay = document.getElementById('timer');
-let timeLeft = 300; // 5 minutes in seconds
-
-function updateTimer() {
-    let minutes = Math.floor(timeLeft / 60);
-    let seconds = timeLeft % 60;
-
-    minutes = minutes &lt; 10 ? "0" + minutes : minutes;
-    seconds = seconds &lt; 10 ? "0" + seconds : seconds;
-
-    timerDisplay.textContent = `${minutes}:${seconds}`;
-
-    if (timeLeft &lt;= 0) {
-        clearInterval(timerInterval);
-        timerDisplay.textContent = "Time's up!";
-    } else {
-        timeLeft--;
-    }
-}
-
-updateTimer(); // Initial call to display the timer immediately
-const timerInterval = setInterval(updateTimer, 1000);
-</code></pre>
-  <p>The JavaScript file contains the logic for the countdown timer. It initializes the timer with 5 minutes (300 seconds). The <code>updateTimer</code> function calculates the minutes and seconds remaining, formats them with leading zeros if necessary, and updates the timer display. If the timer reaches 0, it displays "Time's up!" and stops the countdown. The <code>setInterval</code> function calls <code>updateTimer</code> every 1000 milliseconds (1 second).</p>
-
-  <h2>🛠️ Usage Instructions</h2>
-  <ol>
-    <li>Save the HTML content as <code>index.html</code>.</li>
-    <li>Save the CSS content as <code>style.css</code>.</li>
-    <li>Save the JavaScript content as <code>script.js</code>.</li>
-    <li>Ensure all three files are in the same directory.</li>
-    <li>Open <code>index.html</code> in a web browser to view the countdown timer.</li>
-  </ol>
-
-  <h2>🎨 Customization Options</h2>
-  <ul>
-    <li><b>Timer Duration:</b> Modify the <code>timeLeft</code> variable in <code>script.js</code> to change the initial countdown time. For example, to set the timer to 10 minutes, change <code>let timeLeft = 300;</code> to <code>let timeLeft = 600;</code>.</li>
-    <li><b>Styling:</b> Customize the appearance of the timer by modifying the CSS in <code>style.css</code>. You can change the background color, text color, font, border, and other visual properties.</li>
-    <li><b>Alert Message:</b> Change the message displayed when the timer reaches 0 by modifying the <code>timerDisplay.textContent = "Time's up!";</code> line in <code>script.js</code>.</li>
-  </ul>
-
-  <h2>💡 Potential Improvements</h2>
-  <ul>
-    <li><b>User Input:</b> Add input fields to allow users to set the countdown time dynamically.</li>
-    <li><b>Start/Stop Button:</b> Implement start and stop buttons to control the timer.</li>
-    <li><b>Notifications:</b> Integrate browser notifications to alert users when the timer reaches 0.</li>
-    <li><b>Audio Alerts:</b> Add an audio alert when the timer finishes.</li>
-    <li><b>Responsive Design:</b> Improve the responsiveness of the timer for different screen sizes.</li>
-  </ul>
-
-  <h2>⚠️ Risk Factors and Uncertainties</h2>
-  <p>The functionality of the countdown timer relies on JavaScript being enabled in the user's browser. If JavaScript is disabled, the timer will not function as expected. Additionally, inconsistencies in browser rendering engines could lead to minor visual differences across different browsers. The timer's accuracy depends on the system clock of the user's device, which may be subject to drift over time. To mitigate these risks, ensure that the JavaScript code is robust and thoroughly tested across various browsers and devices.</p>
-
-  <h2>🕵️ Hidden Signals and Meta Observations</h2>
-  <p>The simplicity of the code indicates a focus on ease of understanding and modification. The use of a dark theme suggests an aesthetic preference for modern, minimalist designs. The potential improvements listed highlight opportunities for enhancing the timer's functionality and user experience. The initial countdown time of 5 minutes may be suitable for various applications, such as short tasks, breaks, or training exercises.</p>
-
-  <h2>Final Highlights and Recommendations</h2>
-  <p>The countdown timer provides a functional and visually appealing solution for time management and task tracking. Its modular design and clear code structure make it easy to customize and extend. By implementing the suggested improvements, the timer can be further enhanced to meet specific user needs. Overall, the timer represents a valuable tool for improving productivity and efficiency.</p>
-
-</div> (direct)
-2025-07-10 18:22:31,288 - INFO - contextManager:mark_done:386 - ✅ Extracted formatted_countdown_timer_T002 from direct output
-2025-07-10 18:22:31,289 - STEP_BLOCK - log_config:logger_step:98 - 
-================================================================================
-🟢 ✅ T002 completed successfully
 ================================================================================
 

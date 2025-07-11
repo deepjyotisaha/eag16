@@ -66,6 +66,7 @@ You retrieve **as-is**, from sources including:
 {
   "result_variable_T001": [],  // Empty initially, will be populated by code execution
   "call_self": true,
+  "audit_report": "Clear audit report and explaination that your output & code follows all the instructions specified, and you are not violating any rules"
   "next_instruction": "Clear instruction for next iteration",
   "iteration_context": {
     "current_step": "search_phase",
@@ -84,6 +85,7 @@ You retrieve **as-is**, from sources including:
 {
   "result_variable_T001": [],  // Will be populated by code execution
   "call_self": false,
+  "audit_report": "Clear audit report and explaination that your output & code follows all the instructions specified, and you are not violating any rules"
   "code_variants": {
     "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'result_variable_T001': content}",
     "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'result_variable_T001': text}"
@@ -203,6 +205,48 @@ You retrieve **as-is**, from sources including:
 
 ---
 
+## 🚨 ACCESSING DATA FROM PREVIOUS STEP
+
+**INPUT RECEIVED:**
+```json
+{
+  "agent_prompt": "Extract detailed feature information including digital features, safety features, and pricing from the URLs obtained in the previous step.","previous_output": {
+    "execution_result": {
+        "status": "success",
+        "result": {
+             "xuv_3xo_urls_1A": [ .... ] // This is the variable name
+        }
+    }
+  }
+}
+```
+
+** ✅ CORRECT OUTPUT - Use the variable name 
+```json
+{
+  "xuv_3xo_details_T001": [],
+  "call_self": false,
+  "code_variants": {
+    "CODE_2A": "results = []\nfor url in xuv_3xo_urls_1A[:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'xuv_3xo_details_T001': results}",
+    "CODE_2B": "details = []\nfor url in xuv_3xo_urls_1A[:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract flight prices, schedules, and booking details')\n    details.append(info)\nreturn {'xuv_3xo_details_T001': details}"
+  }
+}
+```
+
+** ❌ WRONG - NEVER use previous_output, globals, locals etc. or any other variations
+```json
+{
+  "xuv_3xo_details_T001": [],
+  "call_self": false,
+  "code_variants": {
+    "CODE_1A": "results = []\nfor url in previous_output['result']['xuv_3xo_urls_1A'][:5]:\n    content = webpage_url_to_raw_text(url)\n    results.append({'url': url, 'content': content})\nreturn {'xuv_3xo_details_T001': results}",
+    "CODE_1B": "details = []\nfor url in previous_output['result']['xuv_3xo_urls_1A'][:3]:\n    info = webpage_url_to_llm_summary(url, 'Extract Mahindra XUV 3XO digital features, safety features, and pricing')\n    details.append(info)\nreturn {'xuv_3xo_details_T001': details}"
+  }
+}
+```
+
+
+
 ## ✅ OUTPUT VARIABLE NAMING
 
 You will receive a "writes" field containing exact variable names to use.
@@ -217,7 +261,7 @@ Example:
 
 ## 🚨 PYTHON CODING RULES:
 
-- DO NOT use import statements in generated code
+- IMPORTANT: DO NOT use import statements in generated code
 - The following modules are already available in the execution environment:
   * json (use directly: json.loads(), json.dumps(), etc.)
   * os (use directly: os.path.join(), etc.)
@@ -227,6 +271,7 @@ Example:
 Example CORRECT code:
 ```python
 # ✅ CORRECT - no import needed
+### Notice there is no import statement here
 competitor_vehicles = json.loads(competitor_vehicles_T003[0]['text'])
 if len(competitor_vehicles) > 1:
     competitor_2_url = competitor_vehicles[1]['url']

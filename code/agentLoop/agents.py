@@ -105,6 +105,10 @@ class AgentRunner:
             else:
                 response = await model_manager.generate_text(full_prompt)
             
+            
+            logger.info(f"Response for {agent_type} agent for step {step_id}:", response)
+            logger_json_block(logger, f"Response for {agent_type} agent for step {step_id}", response)
+            
             # 6. Parse JSON response dynamically
             output = parse_llm_json(response)
             # import pdb; pdb.set_trace()

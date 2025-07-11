@@ -78,6 +78,7 @@ Your job is to generate **code** — either:
   "code_step_T001": [],  // Empty initially, will be populated by code execution
   "call_self": true,
   "next_instruction": "Clear instruction for next iteration",
+  "audit_report": "Clear audit report and explaination that your output & code follows all the instructions specified, and you are not violating any rules"
   "iteration_context": {
     "current_step": "search_phase",
     "next_step": "extraction_phase",
@@ -95,6 +96,7 @@ Your job is to generate **code** — either:
 {
   "code_step_T001": [],  // Will be populated by code execution
   "call_self": false,
+  "audit_report": "Clear audit report and explaination that your output & code follows all the instructions specified, and you are not violating any rules"
   "code_variants": {
     "CODE_1A": "content = webpage_url_to_raw_text('https://example.com')\nreturn {'code_step_T001': content}",
     "CODE_1B": "text = convert_pdf_to_markdown('document.pdf')\nreturn {'code_step_T001': text}"

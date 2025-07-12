@@ -26,7 +26,7 @@ This system implements a **NetworkX Graph-First Architecture** with multiple spe
 |-------|---------|----------------|-------|
 | **PlannerAgent** | Creates execution plans | ❌ | None |
 | **RetrieverAgent** | Data acquisition | ✅ | Web search, documents |
-| **CoderAgent** | Code generation | ✅ | Web search, documents |
+| **CoderAgent** | Code generation | ✅ | Web application, Python |
 | **FormatterAgent** | Report formatting | ✅ | None |
 | **DistillerAgent** | File profiling | ❌ | None |
 | **ThinkerAgent** | Analysis & reasoning | ❌ | None |
@@ -444,6 +444,8 @@ if execution_result.get("status") == "success":
 4. **Robust**: Multiple code variants and error handling
 5. **Comprehensive**: Generates both code and detailed reports
 6. **Flexible**: Supports various input types and output formats
+
+
 
 This system demonstrates advanced multi-agent coordination with self-iteration capabilities, making it suitable for complex task automation and content generation workflows.
 

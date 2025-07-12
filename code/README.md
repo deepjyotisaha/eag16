@@ -263,13 +263,25 @@ const timerInterval = setInterval(updateTimer, 1000);
 - **Professional Styling** with responsive design
 
 **Sample Report Content:**
+- **📊 Executive Summary** - Market positioning and key highlights
+- **💰 Pricing Analysis** - 9 trim variants with detailed pricing tables
+- **🚗 Engine Specifications** - 3 engine options with performance data
+- **🛡️ Safety Features** - Comprehensive safety suite analysis
+- **💻 Digital Features** - Connectivity and technology features
+- **🎨 Design & Comfort** - Interior and exterior design details
+- **⚡ Performance Data** - Power, torque, and mileage specifications
+- **✅ Pros and Cons** - Balanced analysis of strengths and weaknesses
+- **📋 Detailed Variants** - Complete feature breakdown by variant
+- **🔍 Market Analysis** - Competitive positioning and market landscape
+
+**Sample Report Excerpt:**
 ```html
 <div class="comprehensive-report">
 <h1>📊 COMPREHENSIVE Mahindra XUV 3XO ANALYSIS REPORT</h1>
 
 <div class="executive-summary">
 <h2>🎯 Executive Summary</h2>
-<p>The Mahindra XUV 3XO is a subcompact SUV known for its bold design, spacious cabin, and advanced features. It offers a sorted ride, engaging drive, and attractive pricing, making it a competitive option in its segment.</p>
+<p>The Mahindra XUV 3XO is a subcompact SUV known for its bold design, spacious cabin, and advanced features. It offers a sorted ride, engaging drive, and attractive pricing, making it a competitive option in its segment. The XUV 3XO is available with both petrol and diesel engine options. The price range is Rs. 7.99 Lakh - 15.80 Lakh (Avg. ex-showroom). Key features include LED lighting, a panoramic sunroof, advanced connectivity, and Level 2 ADAS. It has received a full five-star rating in BNCAP, making it a safe option for families.</p>
 </div>
 
 <h2>💰 Pricing and Variants Analysis</h2>
@@ -284,10 +296,19 @@ const timerInterval = setInterval(updateTimer, 1000);
   <tbody>
     <tr>
       <td>MX1</td>
-      <td>Rear seat centre armrest, parking sensors, air conditioner...</td>
+      <td>Rear seat centre armrest, parking sensors, air conditioner, power windows-rear, accessory power outlet and AC vents, halogen tail lamps and a pole-type antenna.</td>
       <td>Rs. 7.99 Lakh</td>
     </tr>
-    <!-- 8 more variants with detailed features -->
+    <tr>
+      <td>MX2</td>
+      <td>Adds a 10.25-inch infotainment system, 4 speakers, steering audio control, remote keyless entry, and a follow-me-home headlamp.</td>
+      <td>Rs. 9.99 Lakh</td>
+    </tr>
+    <tr>
+      <td>AX7 Luxury</td>
+      <td>All features of AX7 plus additional luxury enhancements.</td>
+      <td>Rs. 13.99 Lakh - Rs. 15.49 Lakh</td>
+    </tr>
   </tbody>
 </table>
 
@@ -310,11 +331,25 @@ const timerInterval = setInterval(updateTimer, 1000);
       <td>6-speed manual & Automatic (TC)</td>
       <td>17.96 to 20.1 kmpl</td>
     </tr>
-    <!-- 2 more engine variants -->
+    <tr>
+      <td>1.5-litre diesel (mHawk)</td>
+      <td>115 bhp</td>
+      <td>300 Nm</td>
+      <td>6-speed manual & Automatic (AMT)</td>
+      <td>20.6 to 21.2 kmpl</td>
+    </tr>
   </tbody>
 </table>
 
-<!-- Additional sections: Safety Features, Digital Features, Pros and Cons, etc. -->
+<h2>Safety Features</h2>
+<ul>
+  <li>Six airbags</li>
+  <li>ABS with EBD</li>
+  <li>Level 2 ADAS suite with features like traffic sign recognition, high beam assist, lane departure warning, and smart pilot assist</li>
+  <li>360-degree camera</li>
+  <li>Tyre pressure monitoring system</li>
+</ul>
+<p>The vehicle has received a full five-star rating in BNCAP, underscoring its commitment to safety.</p>
 </div>
 ```
 

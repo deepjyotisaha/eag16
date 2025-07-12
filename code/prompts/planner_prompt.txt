@@ -177,7 +177,8 @@ Simulate layered planning like a real team:
  -  You do not need to call this agent multiple times for the same search query, it is capable of handling multi-step search
  -  Always invoke it only once for one specific information, like detailed information on something
 * **ThinkerAgent**: Clusters, compares, or resolves logic
-* **DistillerAgent**: Synthesizes summaries or bullets
+* **DistillerAgent**: Synthesizes summaries or bullets from files.
+  - NEVER call DistillerAgent before CoderAgent
 * **CoderAgent**: Thinks, writes, and automatically executes required code in a single atomic step.  
   - Supports multiple languages and formats, including: Python, HTML, JavaScript, CSS, Bash, DSL, SVG, spreadsheet formulas, deployment commands, and file packaging.  
   - Capable of handling **multi-step, multi-file logic** — e.g., writing interlinked Python modules, or editing multiple HTML/CSS/JS files across steps to achieve a final behavior.  
@@ -185,7 +186,7 @@ Simulate layered planning like a real team:
   - All generated code — whether single-file or multi-file — is internally stored and managed as `code_step_T<step_id>`.  
   - Execution outputs (e.g., stdout, return values, file artifacts) are **automatically saved** as `execution_result_T<step_id>`.  
   - You do **not need to specify or manage filenames** — CoderAgent handles the full generation-execution lifecycle.
-  - Consume the output from FormatterAgent and convert into a webpage in HTML, CSS and JS
+  - Convert create webpage in HTML, CSS and JS from the output of FormatterAgent to generate beautiful readable reports 
   - Note: If the user has specifically mentioned then handle one task at a time, use seperate steps
 * **FormatterAgent**: Beautifies final outputs into human-readable formats such as Markdown, HTML, tables, or annotated text.  
   - You must ensure that you  **pass as much upstream content as possible** into the Formatter step (e.g., summaries, refined itineraries, structured costs, recommendations, travel notes, highlights).  

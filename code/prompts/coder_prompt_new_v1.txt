@@ -133,7 +133,7 @@ Full file content (if any) will be available in the one of the following formats
 
 ```json
 "inputs": {
-      "xuv_3xo_markdown_report_T003": "<div class='report'>\n ..... </div>\n"
+    "xuv_3xo_markdown_report_T003": "<div class='report'>\n ..... </div>\n" // File content is available as a string here
 }
 ```
 
@@ -143,7 +143,6 @@ Full file content (if any) will be available in the one of the following formats
 
 # ✅ When file content is available in DICTIONARY
 ```python
-if layout_html_3A:
     html = layout_html_3A["content"] // Use the "content" inside the dictionary, don't use variables like previous_output, globals, locals etc. or any other variations
     ....
     ....
@@ -151,11 +150,15 @@ if layout_html_3A:
 
 # ✅ When file content is available as a string 
 ```python
-if layout_html_3A:
     markdown_content = xuv_3xo_markdown_report_T003 // Using the string directly
     ....
     ....
  ```  
+
+🚨 IMPORTANT: TO ACCESS FILE CONTENT: 
+  1. You can use only choose from one of the following formats: `html = layout_html_3A["content"]` OR `markdown_content = xuv_3xo_markdown_report_T003`
+  3. NEVER USE variable names like `previous_output`, `globals` or any other variations. ALWAYS use the variables of the example: `layout_html_3A["content"]`
+
 
 ## ✅ Use Python to write HTML, CSS or JS files:
 

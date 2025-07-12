@@ -158,7 +158,7 @@ class ExecutionContextManager:
                         logger.warning(f"⚠️ Variable name conflict detected: '{var_name}' already exists in globals_schema. Using agent output value.")
                         logger.info("We will not overvwritte the value of globals_schema with agent output value")
                     else:
-                        if var_name not in ['code_variants', 'call_self', 'cost', 'input_tokens', 'output_tokens', 'execution_result', 'execution_status', 'execution_error', 'execution_time', 'executed_variant']:
+                        if var_name not in ['code_variants', 'call_self', 'cost', 'input_tokens', 'output_tokens', 'execution_result', 'execution_status', 'execution_error', 'execution_time', 'executed_variant', 'next_instruction', 'total_tokens', 'audit_report']:
                             globals_injection += f'{var_name} = {repr(var_value)}\n'
                 
                 # 3. Create convenience variables for reads
